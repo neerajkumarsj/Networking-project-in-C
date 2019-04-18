@@ -15,3 +15,4 @@ run: all
 clean:
 	rm -f routing_server
 	rm -f node
+	rm -r logs/
