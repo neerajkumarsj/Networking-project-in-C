@@ -2,11 +2,11 @@ CCFLAGS= -g
 
 all: routing_server node
 
-routing_server: routing_server.c
-	gcc routing_server.c $(CCFLAGS) -o routing_server
+routing_server: kildekode/routing_server.c
+	gcc kildekode/routing_server.c $(CCFLAGS) -o routing_server
 
-node: node.c
-	gcc node.c $(CCFLAGS) -o node
+node: kildekode/node.c
+	gcc kildekode/node.c $(CCFLAGS) -o node
 
 
 run: all
