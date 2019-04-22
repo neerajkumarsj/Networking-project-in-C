@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // For å kunne bruke memcpy.
 
 #include <unistd.h> // For å kunne stenge en socket med close().
 #include <sys/socket.h> // For det standardisérte socket-API'et.
@@ -107,33 +108,51 @@ int openTCPConnectionToRoutingServer(){
     	// Protokoll:
     	// OwnAdress\nEdge:Weight\nEdge:Weight\nEdge:Weight...Edge:Weight\0
 
-    	// char edgeWeightList [2048];
-    	// int curIndex = 0;
-     //    int i;
-     //    char toBuff[64];
-     //    char weightBuff[64];
-    	// for(i = 0; i < neighbourCount; i++){
-            
+    	  char edgeWeightList [2048];
+    	  int curIndex = 0;
+          int i;
+     //     char toBuff[64];
+     //     char weightBuff[64];
+    	  for(i = 0; i < neighbourCount; i++){
+                memcpy( &edgeWeightList[curIndex], &neighbourNodes[i].to, sizeof(int));
+                curIndex += sizeof(int);
+                memcpy( &edgeWeightList[curIndex], ":" , 1);
+                curIndex++;
+                memcpy( &edgeWeightList[curIndex], &neighbourNodes[i].weight, sizeof(int));
+                curIndex += sizeof(int);
+                memcpy( &edgeWeightList[curIndex], "\n" , 1);
+                curIndex++;
+
+
+
           
-     //        int toDataLen = 1 + snprintf(toBuff,"%d:",neighbourNodes[i].to);
-     //        int weightDataLen 1 + snprintf(weightBuff,"%d\n",neighbourNodes[i].weight);
+     //         int toDataLen = 1 + snprintf(toBuff,"%d:",neighbourNodes[i].to);
+     //         int weightDataLen 1 + snprintf(weightBuff,"%d\n",neighbourNodes[i].weight);
 
-     //        // Copy nodeID ( NodeInfo.to )  from the the current neightbouringNode into the Edge/Weight-Buffer.
-     //        memcpy(edgeWeightList[curIndex], toBuff, toDataLen);
-     //        curIndex += toDataLen;
+     // //        // Copy nodeID ( NodeInfo.to )  from the the current neightbouringNode into the Edge/Weight-Buffer.
+     //         memcpy(edgeWeightList[curIndex], toBuff, toDataLen);
+     //         curIndex += toDataLen;
 
-     //        // Copy weight ( NodeInfo.weight ) from the the current neightbouringNode into the Edge/Weight-Buffer.
-     //        memcpy(edgeWeightList[curIndex], weightBuff, weightDataLen);
-     //        curIndex += weightDataLen;
+     // //        // Copy weight ( NodeInfo.weight ) from the the current neightbouringNode into the Edge/Weight-Buffer.
+     //         memcpy(edgeWeightList[curIndex], weightBuff, weightDataLen);
+     //         curIndex += weightDataLen;
 
             
-    	// }
+    	 }
+
+    	// Set nullchar at the end of the edgeWeightList for this Node.
+    	edgeWeightList [curIndex] = '\0';
+
+    	printf("Content of edgeWeightList after network-preparation = %s \n ", edgeWeightList);
+
+
+    	printf("Connection with RoutingServer successfull! \n ");
 
 
 
-    	char nodeInfoTCPBuffer [2048] = "123123\0";
+    	char nodeInfoTCPBuffer [2048];// = "12312312321313\0";
     	// Skriver direkte til en char * 
-    	//snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList)
+    	snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
 
     	
 
@@ -143,11 +162,10 @@ int openTCPConnectionToRoutingServer(){
 
     	// eksempel
     	// send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
-        send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+    	printf("Attempting to send data: %s\n", nodeInfoTCPBuffer);
+        int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
 
-        send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
-
-        send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+        printf("returnvalue from send() : %d", bytesSent);
 
 
 
@@ -172,7 +190,7 @@ int openTCPConnectionToRoutingServer(){
     }else{
 
     	// Error!
-    	printf("Det skjedde en feil ved opprettelsen av TCP-router-klient-socketen!");
+    	printf("Det skjedde en feil ved opprettelsen av TCP-router-klient-socketen!\n");
     	exit(0);
     	return -1;
 
@@ -197,6 +215,7 @@ void parseCommandFromUDPSocket(){
 
 
 void freeAllAllocatedMemory (){
+
 	free(neighbourNodes);
 }
 

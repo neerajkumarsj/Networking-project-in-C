@@ -15,6 +15,8 @@ int N = 0;  // N = antall noder i systemet.
 
 char clientResponseBuffer [2048];
 
+
+
 int main(int argc, char* argv[]){
 
 	printf("Hello I'm routing_server.c %d",argc);
@@ -65,7 +67,8 @@ int initializeTCPServer(){
 
 
     // Lag en NodeSocket liste som alle nodene kan lagres i. ( Vil brukes som Graf for Dijsktras senere ).
-    struct NodeSocket * nodeSockets [] = malloc(sizeof(struct NodeSocket) * N );
+    
+    struct NodeSocket ** nodeSockets = malloc(sizeof(struct NodeSocket *) * N);
     int currentNodeSocketCount = 0;
 
 
@@ -91,7 +94,7 @@ int initializeTCPServer(){
     
     while(nodeConnectionsCountSoFar < N){
 
-        printf("N = %d,   nodeConnectionsCountSoFar = %d",N, nodeConnectionsCountSoFar);
+        printf("N = %d,   nodeConnectionsCountSoFar = %d\n",N, nodeConnectionsCountSoFar);
 
     	int klient_socket = accept(ruterServerSocket, NULL, NULL);
     	printf("accept() called!\n");
@@ -101,22 +104,40 @@ int initializeTCPServer(){
             printf("Accept() called but client_socket has a failure value.\n");
 
         }else{
-            printf("A TCP-client connected!!\n client_socket_id = %d", klient_socket);
+            printf("A TCP-client connected!!\n client_socket_id = %d \n", klient_socket);
 
             // Handle Storage of the client structre here:
+            nodeSockets[currentNodeSocketCount] = malloc(sizeof(struct NodeSocket) );
             nodeSockets[currentNodeSocketCount]->socketID = klient_socket;
             nodeSockets[currentNodeSocketCount]->noder = NULL;
             currentNodeSocketCount ++;
 
+            int bytesRecieved = recv(klient_socket, &clientResponseBuffer, sizeof(clientResponseBuffer),0);
+
+            if(bytesRecieved == 0){
+
+                printf("No bytes were recieved, but a sending-connection was made from a client.\n");
+
+            } else if(bytesRecieved == -1){
+
+                printf("An error occured with reception of data!\n");   
+
+            }else{
+
+                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, klient_socket, clientResponseBuffer);    
+
+            }
+
             if(currentNodeSocketCount > N){
-                printf("Amount of nodes connected in the router exceeded the legal value of N = %d \n",N);
+                printf("Amount of nodes connected in the router exceeded the amount specified at start of Program: Max Sockets is: %d \n",N);
                 exit(0);
             }
             // 1) Store Socket ID.
             // 2) Store NodeID.
             // 3) Store List over Edge - Weights.
 
-
+            printf("All nodes currently in system: \n");
+            printAllNodeSockets(nodeSockets, currentNodeSocketCount);
 
         }
 
@@ -128,21 +149,7 @@ int initializeTCPServer(){
 
 
     	// recv(ruterServerSocket, char buffer[248], sizeof(buffer), 0);
-    	int bytesRecieved = recv(ruterServerSocket, &clientResponseBuffer, sizeof(clientResponseBuffer),0);
-
-        if(bytesRecieved == 0){
-
-            printf("No bytes were recieved, but a sending-connection was made from a client.\n");
-
-        } else if(bytesRecieved == -1){
-
-            printf("An error occured with reception of data!\n");   
-
-        }else{
-
-            printf("recieved message from socket %d   message:%s\n", klient_socket, clientResponseBuffer);    
-
-        }
+    	
         
 
 
@@ -177,8 +184,26 @@ int initializeTCPServer(){
 
     // Free up dynamically allocated memory from nodeSockets.
     free(nodeSockets);
+    int i;
+    for(i = 0; i < currentNodeSocketCount ; i++){
+        free(nodeSockets[i]);
+    }
 
 }
+
+
+void printAllNodeSockets(struct NodeSocket * sockets [], int len ){
+
+    int i = 0;
+    for (; i < len ; i++){
+        printf("sockets[%d]->socketID --> %d ", i,  sockets[i]->socketID);
+        printf("sockets[%d]->noder ---> %d ", i, sockets[i]->noder); 
+        printf("\n");
+    
+    }  
+
+}
+
 
 
 
