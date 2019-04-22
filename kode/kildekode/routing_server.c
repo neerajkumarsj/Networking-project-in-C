@@ -1,5 +1,6 @@
 #include <stdio.h> // For å ha access til printf()
 #include <stdlib.h> // For å kunne allokére med malloc()
+#include <string.h> // For å kunne bruke memcpy.
 
 #include <unistd.h> // For å kunne stenge en socket med close().
 #include <sys/socket.h> // For det standardisérte socket-API'et.
@@ -114,19 +115,48 @@ int initializeTCPServer(){
 
             int bytesRecieved = recv(klient_socket, &clientResponseBuffer, sizeof(clientResponseBuffer),0);
 
-            if(bytesRecieved == 0){
+            if(bytesRecieved > 0){
+
+                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, klient_socket, clientResponseBuffer);
+
+
+                // Decode data from socket.
+                struct NodeSocket * currSock = getNodeSocketBySocketId(nodeSockets, currentNodeSocketCount, klient_socket);
+
+                // Copy in the ID of the node.
+                memcpy(&currSock->nodeID, &clientResponseBuffer, sizeof(int));
+                int readIndex = sizeof(int);
+
+
+
+                // Copy in all the weights.
+                while(clientResponseBuffer[readIndex] != '\0'){
+                    int to     =  clientResponseBuffer[readIndex];
+                    readIndex += 4; 
+                    int weight =  clientResponseBuffer[readIndex];
+                    readIndex += 4;
+                    printf("nodeID[%d] has Edge/weight;  to:  %d     weight:    %d \n",currSock->nodeID, to,weight );
+                }
+
+
+                // amount of weights = 
+
+
+
+            } else if(bytesRecieved == 0){
 
                 printf("No bytes were recieved, but a sending-connection was made from a client.\n");
 
-            } else if(bytesRecieved == -1){
+            } else{
 
                 printf("An error occured with reception of data!\n");   
-
-            }else{
-
-                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, klient_socket, clientResponseBuffer);    
-
             }
+
+                
+                
+
+
+
 
             if(currentNodeSocketCount > N){
                 printf("Amount of nodes connected in the router exceeded the amount specified at start of Program: Max Sockets is: %d \n",N);
@@ -197,6 +227,7 @@ void printAllNodeSockets(struct NodeSocket * sockets [], int len ){
     int i = 0;
     for (; i < len ; i++){
         printf("sockets[%d]->socketID --> %d ", i,  sockets[i]->socketID);
+        printf("sockets[%d]->nodeID --> %d ", i,  sockets[i]->nodeID);
         printf("sockets[%d]->noder ---> %d ", i, sockets[i]->noder); 
         printf("\n");
     
@@ -205,6 +236,16 @@ void printAllNodeSockets(struct NodeSocket * sockets [], int len ){
 }
 
 
+
+struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int len,  int socketID){
+    int i;
+    for(i = 0; i < len; i++  ){
+        if(sockets[i]->socketID == socketID){
+            return sockets[i];
+        }
+    }
+
+}
 
 
 

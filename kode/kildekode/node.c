@@ -106,22 +106,28 @@ int openTCPConnectionToRoutingServer(){
     	// #1 Forberéd dataen som skal sendes.
 
     	// Protokoll:
-    	// OwnAdress\nEdge:Weight\nEdge:Weight\nEdge:Weight...Edge:Weight\0
+    	// OwnAdress | \n |     Edge      Weight    | \n |      Edge:Weight\nEdge:Weight...Edge:Weight\0
+    	// 4 bytes    1 byte    4 bytes   4 bytes    1 byte  ... 
 
     	  char edgeWeightList [2048];
     	  int curIndex = 0;
           int i;
      //     char toBuff[64];
      //     char weightBuff[64];
+          printf("Looping through neighbours: \n ");
     	  for(i = 0; i < neighbourCount; i++){
-                memcpy( &edgeWeightList[curIndex], &neighbourNodes[i].to, sizeof(int));
+
+    	  	printf("Dealing with neighbour[%d]  to= %d     weight= %d \n" , i, neighbourNodes[i].to, neighbourNodes[i].weight);
+
+                edgeWeightList[curIndex] = neighbourNodes[i].to;
                 curIndex += sizeof(int);
-                memcpy( &edgeWeightList[curIndex], ":" , 1);
-                curIndex++;
-                memcpy( &edgeWeightList[curIndex], &neighbourNodes[i].weight, sizeof(int));
+                edgeWeightList[curIndex] = neighbourNodes[i].weight;
                 curIndex += sizeof(int);
-                memcpy( &edgeWeightList[curIndex], "\n" , 1);
-                curIndex++;
+                
+                // edgeWeightList[curIndex] = '\n'; 
+                // curIndex++;
+                printf("Index after adding weight: curIndex = %d", curIndex);
+
 
 
 
@@ -137,24 +143,37 @@ int openTCPConnectionToRoutingServer(){
      //         memcpy(edgeWeightList[curIndex], weightBuff, weightDataLen);
      //         curIndex += weightDataLen;
 
-            
+//			printf("Content of edgeWeightList at %d is now  = %s \n ", i , edgeWeightList);
     	 }
 
     	// Set nullchar at the end of the edgeWeightList for this Node.
     	edgeWeightList [curIndex] = '\0';
+    	printf("\n");
+    	printf("256 first bytes of edgeWeightList after network-preparation =  ");
 
-    	printf("Content of edgeWeightList after network-preparation = %s \n ", edgeWeightList);
+    	for(i = 0; i< 256; i++){
+    		printf("%d",edgeWeightList[i]);
+    	}
 
 
-    	printf("Connection with RoutingServer successfull! \n ");
+    	printf("\nConnection with RoutingServer successfull! \n ");
 
 
 
     	char nodeInfoTCPBuffer [2048];// = "12312312321313\0";
     	// Skriver direkte til en char * 
-    	snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
+    	int lastIndex = 0;
+    	memcpy(&nodeInfoTCPBuffer, &OwnAddress, sizeof(int));
+    	lastIndex = sizeof(int);
 
-    	
+    	//snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
+    	memcpy(&nodeInfoTCPBuffer[lastIndex], &edgeWeightList, curIndex);
+
+
+    	printf("\n256 first bytes of nodeInfoTCPBuffer after network-preparation =  ");
+    	for(i = 0; i< 256; i++){
+    		printf("%c",nodeInfoTCPBuffer[i]);
+    	}
 
 
 
@@ -162,7 +181,7 @@ int openTCPConnectionToRoutingServer(){
 
     	// eksempel
     	// send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
-    	printf("Attempting to send data: %s\n", nodeInfoTCPBuffer);
+    	//printf("Attempting to send data: %s\n", nodeInfoTCPBuffer);
         int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
 
         printf("returnvalue from send() : %d", bytesSent);
