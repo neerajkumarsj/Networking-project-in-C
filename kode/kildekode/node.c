@@ -3,6 +3,9 @@
 
 #include <unistd.h> // For å kunne stenge en socket med close().
 #include <sys/socket.h> // For det standardisérte socket-API'et.
+#include <sys/types.h> // For noen av typene som kreves for å få sockets til å funke.
+
+#include <netinet/in.h> // Inneholder noen av addresse structene som man bruker med sockets.
 
 
 char buffer [2048];
@@ -27,12 +30,13 @@ struct NodeInfo * neighbourNodes; // Array that holds references to all neighbor
 
 int main(int argc, char * argv[]){
 
-	printf("Hello I'm node.c ! Amount of arguments: %d \n",argc);
+	printf("Hello I'm a node.c! Amount of arguments: %d \n",argc);
 	
 	initializeNode(argc, argv);
 
-
 	openTCPConnectionToRoutingServer();
+
+	openUDPConnectionsToNeighbours();
 
 	printNodeInfo();
 
@@ -49,12 +53,15 @@ int main(int argc, char * argv[]){
 
 void initializeNode(int argCount, char * argList[]){
 	
+	printf("Initializing node.\n");
     // If the arguments to this program are formatted correctly
     // argc - 3 should be the correct size of the Edge -> Weight Array.
     neighbourCount = argCount - 3;
     neighbourNodes = malloc(sizeof(struct NodeInfo) * neighbourCount);
 
     int i;
+
+    printf("Reading arguments:\n");
 	for(i = 0; i < argCount ; i++){
 		printf("argument %d: %s \n",i, argList[i]);
 
@@ -85,11 +92,109 @@ void initializeNode(int argCount, char * argList[]){
 
 
 
-int openTCPConnectionToRoutingServer(){
 
+int openTCPConnectionToRoutingServer(){
+ 								// SOCK_STREAM betyr TCP-type socket.
+	int socketToRouter = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in serverAdresse;
+	
+	serverAdresse.sin_family = AF_INET;
+	serverAdresse.sin_port = htons(BasePort);
+	serverAdresse.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0 ( localhost ).
+
+    int socketStatus = connect(socketToRouter, (struct sockaddr *) &serverAdresse, sizeof(serverAdresse) );
+
+    if(socketStatus != -1){
+    	// Alt gikk bra og dermed kan vi sende data direkte!
+
+    	// #1 Forberéd dataen som skal sendes.
+
+    	// Protokoll:
+    	// OwnAdress\nEdge:Weight\nEdge:Weight\nEdge:Weight...Edge:Weight\0
+
+    	// char edgeWeightList [2048];
+    	// int curIndex = 0;
+     //    int i;
+     //    char toBuff[64];
+     //    char weightBuff[64];
+    	// for(i = 0; i < neighbourCount; i++){
+            
+          
+     //        int toDataLen = 1 + snprintf(toBuff,"%d:",neighbourNodes[i].to);
+     //        int weightDataLen 1 + snprintf(weightBuff,"%d\n",neighbourNodes[i].weight);
+
+     //        // Copy nodeID ( NodeInfo.to )  from the the current neightbouringNode into the Edge/Weight-Buffer.
+     //        memcpy(edgeWeightList[curIndex], toBuff, toDataLen);
+     //        curIndex += toDataLen;
+
+     //        // Copy weight ( NodeInfo.weight ) from the the current neightbouringNode into the Edge/Weight-Buffer.
+     //        memcpy(edgeWeightList[curIndex], weightBuff, weightDataLen);
+     //        curIndex += weightDataLen;
+
+            
+    	// }
+
+
+
+    	char nodeInfoTCPBuffer [2048] = "123123";
+    	// Skriver direkte til en char * 
+    	//snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList)
+
+    	
+
+
+
+    	// #2 Send informasjonen for denne Noden.
+
+    	// eksempel
+    	// send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
+        send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+
+
+
+
+
+
+
+        // #3 Vent på ruter-data fra hovedprogrammet
+
+
+
+
+        // #4 Lagre rute-tabellen 
+
+
+
+
+
+        // #5 Terminér TCP-tilkoblingen med rute_serveren.
+        close(socketToRouter);
+
+    }else{
+
+    	// Error!
+    	printf("Det skjedde en feil ved opprettelsen av TCP-router-klient-socketen!");
+    	exit(0);
+    	return -1;
+
+    }
 
 	return 0;
 }
+
+
+
+int openUDPConnectionsToNeighbours(){
+
+	return 0;
+}
+
+
+void parseCommandFromUDPSocket(){
+
+}
+
+
 
 
 void freeAllAllocatedMemory (){
@@ -109,10 +214,6 @@ int printNodeInfo(){
 	}
 }
 
-
-void parseCommandFromUDPSocket(){
-	
-}
 
 
 

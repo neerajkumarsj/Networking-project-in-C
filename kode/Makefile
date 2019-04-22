@@ -10,7 +10,7 @@ node: kildekode/node.c
 
 
 run: all
-	bash run.sh
+	bash run_1.sh
 
 clean:
 	rm -f routing_server
