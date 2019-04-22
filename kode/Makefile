@@ -2,15 +2,15 @@ CCFLAGS= -g
 
 all: routing_server node
 
-routing_server: kildekode/routing_server.c
+routing_server: kildekode/routing_server.c kildekode/IN2140Networking.h
 	gcc kildekode/routing_server.c $(CCFLAGS) -o routing_server
 
-node: kildekode/node.c
+node: kildekode/node.c kildekode/IN2140Networking.h
 	gcc kildekode/node.c $(CCFLAGS) -o node
 
 
 run: all
-	bash run_1.sh
+	bash run_1.sh 2020
 
 clean:
 	rm -f routing_server

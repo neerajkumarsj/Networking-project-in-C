@@ -8,19 +8,14 @@
 #include <netinet/in.h> // Inneholder noen av addresse structene som man bruker med sockets.
 
 
+#include "IN2140Networking.h" // Inneholder structer for Oppgaven.
+
+
 char buffer [2048];
 int OwnAddress = -1;
 int BasePort = -1;
 
 void initializeNode(int, char **);
-
-struct NodeInfo{
-	int OwnAddress;
-	int BasePort;
-	int from;
-	int to;
-	int weight;
-};
 
 int neighbourCount = 0; // Amount of neighbouring nodes.
 struct NodeInfo * neighbourNodes; // Array that holds references to all neighboring nodes and their weights.
@@ -136,7 +131,7 @@ int openTCPConnectionToRoutingServer(){
 
 
 
-    	char nodeInfoTCPBuffer [2048] = "123123";
+    	char nodeInfoTCPBuffer [2048] = "123123\0";
     	// Skriver direkte til en char * 
     	//snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList)
 
@@ -148,6 +143,10 @@ int openTCPConnectionToRoutingServer(){
 
     	// eksempel
     	// send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
+        send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+
+        send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+
         send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
 
 
