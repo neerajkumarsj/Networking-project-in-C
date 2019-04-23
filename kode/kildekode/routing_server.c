@@ -18,6 +18,10 @@ char clientResponseBuffer [2048];
 
 
 
+
+
+
+
 int main(int argc, char* argv[]){
 
 	printf("Hello I'm routing_server.c %d",argc);
@@ -97,49 +101,82 @@ int initializeTCPServer(){
 
         printf("N = %d,   nodeConnectionsCountSoFar = %d\n",N, nodeConnectionsCountSoFar);
 
-    	int klient_socket = accept(ruterServerSocket, NULL, NULL);
+    	int client_socket = accept(ruterServerSocket, NULL, NULL);
     	printf("accept() called!\n");
 
-        if(klient_socket == -1){
+        if(client_socket == -1){
 
             printf("Accept() called but client_socket has a failure value.\n");
 
         }else{
-            printf("A TCP-client connected!!\n client_socket_id = %d \n", klient_socket);
+            printf("A TCP-client connected!!\n client_socket_id = %d \n", client_socket);
 
             // Handle Storage of the client structre here:
             nodeSockets[currentNodeSocketCount] = malloc(sizeof(struct NodeSocket) );
-            nodeSockets[currentNodeSocketCount]->socketID = klient_socket;
-            nodeSockets[currentNodeSocketCount]->noder = NULL;
+            nodeSockets[currentNodeSocketCount]->socketID = client_socket;
+            nodeSockets[currentNodeSocketCount]->nodes = NULL;
             currentNodeSocketCount ++;
 
-            int bytesRecieved = recv(klient_socket, &clientResponseBuffer, sizeof(clientResponseBuffer),0);
+            int bytesRecieved = recv(client_socket, &clientResponseBuffer, sizeof(clientResponseBuffer),0);
 
             if(bytesRecieved > 0){
 
-                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, klient_socket, clientResponseBuffer);
+                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, client_socket, clientResponseBuffer);
 
 
                 // Decode data from socket.
-                struct NodeSocket * currSock = getNodeSocketBySocketId(nodeSockets, currentNodeSocketCount, klient_socket);
+                struct NodeSocket * currSock = getNodeSocketBySocketId(nodeSockets, currentNodeSocketCount, client_socket);
 
                 // Copy in the ID of the node.
                 memcpy(&currSock->nodeID, &clientResponseBuffer, sizeof(int));
                 int readIndex = sizeof(int);
 
-
-
-                // Copy in all the weights.
+                // Count all the weights:
                 while(clientResponseBuffer[readIndex] != '\0'){
+                    readIndex += sizeof(int) * 2;
+                }
+                int amountOfEdgeWeights = readIndex / 4 / 2;
+                printf("amountOfEdgeWeights %d \n", amountOfEdgeWeights);
+
+
+
+                // Create dynamcally allocated struct NodeInfo pointer(!) Array.
+                currSock->nodes = malloc(sizeof(struct NodeInfo * ) * amountOfEdgeWeights);
+                currSock->nodeCount = amountOfEdgeWeights;
+
+
+                readIndex = sizeof(int);
+                // Copy in all the weights.
+                int curEdgeWeightIndex = 0;
+                while(clientResponseBuffer[readIndex] != '\0'){
+
+                    // Allocate dynamic space for a struct NodeInfo! To holde Weight / Edges.
+                    currSock->nodes[curEdgeWeightIndex] = malloc( sizeof(struct NodeInfo) );
+
                     int to     =  clientResponseBuffer[readIndex];
                     readIndex += 4; 
                     int weight =  clientResponseBuffer[readIndex];
                     readIndex += 4;
                     printf("nodeID[%d] has Edge/weight;  to:  %d     weight:    %d \n",currSock->nodeID, to,weight );
+
+                    currSock->nodes[curEdgeWeightIndex]->OwnAddress = currSock->nodeID;
+                    currSock->nodes[curEdgeWeightIndex]->from = currSock->nodeID;
+                    currSock->nodes[curEdgeWeightIndex]->to = to;
+                    currSock->nodes[curEdgeWeightIndex]->weight = weight;
+
+
+                    curEdgeWeightIndex++;
                 }
 
 
-                // amount of weights = 
+                // Store the weights in the correct place.
+
+
+                // Clean up the buffer.
+                int i;
+                for(i = 0; i < 2048 ; i++ ){
+                    clientResponseBuffer [i] = 0;
+                }
 
 
 
@@ -166,8 +203,7 @@ int initializeTCPServer(){
             // 2) Store NodeID.
             // 3) Store List over Edge - Weights.
 
-            printf("All nodes currently in system: \n");
-            printAllNodeSockets(nodeSockets, currentNodeSocketCount);
+            
 
         }
 
@@ -187,35 +223,43 @@ int initializeTCPServer(){
 
 
 
-        // Increase the amonut of stored Data.
+        // Increase the amount of stored Data.
         nodeConnectionsCountSoFar++;
 
 
     }
 
+    printf("All nodes currently in system: \n");
+    printAllNodeSockets(nodeSockets, currentNodeSocketCount);
+
+    printf("All Edges / Weights (nodeID)---- weight --->(nodeTargetID)  \n");
+    printAllEdgesAndWeights(nodeSockets, currentNodeSocketCount);
+
+
+
     // When the code reaches this point all the nodes have successfully communicated
     // with the routing_server.
 
+    int i;
+    for( i = 0; i < currentNodeSocketCount; i++){
+        struct NodeSocket * socket = nodeSockets[i];
+        calculateDijkstrasShortestPathAndSendToSocket(socket);
+    }
+    
 
 
 
 
-    // if(socketStatus != -1){
-    // 	// Alt gikk bra
-    // }else{
 
-    // 	// Error!
-    // 	printf("Det skjedde en feil ved opprettelsen av TCP-router-serveren!");
-    // 	exit(0);
-    // 	return -1;
-
-    // }
 
 
     // Free up dynamically allocated memory from nodeSockets.
     free(nodeSockets);
-    int i;
     for(i = 0; i < currentNodeSocketCount ; i++){
+
+
+        // TODO MÅ FRIGJØRE nodeSockets[i].nodes!"!#=)"!(#!"=)#((#=)!")
+
         free(nodeSockets[i]);
     }
 
@@ -226,10 +270,18 @@ void printAllNodeSockets(struct NodeSocket * sockets [], int len ){
 
     int i = 0;
     for (; i < len ; i++){
-        printf("sockets[%d]->socketID --> %d ", i,  sockets[i]->socketID);
-        printf("sockets[%d]->nodeID --> %d ", i,  sockets[i]->nodeID);
-        printf("sockets[%d]->noder ---> %d ", i, sockets[i]->noder); 
-        printf("\n");
+
+
+        printf("\nNodeID   : %d ", sockets[i]->nodeID);
+        printf("\nSocketID : %d ", sockets[i]->socketID);
+
+        printf("\n\n All neighbours\n");
+        int j = 0;
+        for(j = 0; j < sockets[i]->nodeCount ; j++){
+            printf("From: %d  to: %d  weight: %d\n",  sockets[i]->nodes[j]->from, sockets[i]->nodes[j]->to, sockets[i]->nodes[j]->weight);
+        }
+        
+        printf("\n\n");
     
     }  
 
@@ -248,6 +300,36 @@ struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int 
 }
 
 
+
+
+void calculateDijkstrasShortestPathAndSendToSocket(struct NodeSocket * socket){
+
+    // 1)  Find the correct NodeSocket to work with.
+
+    // 2)  Calculate the Routing Table for the NodeSocket.
+
+    // 3)  Send the routing data back to the socket.
+
+
+
+
+    // RoutingTable Structure:
+    // from    |  to        |   .... |  from      |    to        | '\0'
+    // 4 bytes |  4 bytes   |        |  4 bytes   |    4 bytes   |
+
+
+}
+
+
+void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len){
+    int i = 0, j = 0;
+    for (; i < len ; i++){
+        for(j = 0; j < sockets[i]->nodeCount ; j++){
+            printf(" (%d)  ----- %d ------>  (%d)  \n", sockets[i]->nodes[j]->from, sockets[i]->nodes[j]->weight, sockets[i]->nodes[j]->to);
+        }
+    }  
+
+}
 
 
 
