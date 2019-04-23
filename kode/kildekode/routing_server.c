@@ -16,6 +16,8 @@ int N = 0;  // N = antall noder i systemet.
 
 char clientResponseBuffer [2048];
 
+struct NodeSocket ** nodeSockets;
+int currentNodeSocketCount = 0;
 
 
 
@@ -42,6 +44,7 @@ int main(int argc, char* argv[]){
 	}
 
 
+    initializeTCPServer();   
 
 	// Les data.txt.
 
@@ -56,7 +59,7 @@ int main(int argc, char* argv[]){
     // Så må jeg bygge opp en graf og kalkulere dijkstras-algoritme på den.
 	
 
-	initializeTCPServer();
+	
 
 
 
@@ -73,8 +76,8 @@ int initializeTCPServer(){
 
     // Lag en NodeSocket liste som alle nodene kan lagres i. ( Vil brukes som Graf for Dijsktras senere ).
     
-    struct NodeSocket ** nodeSockets = malloc(sizeof(struct NodeSocket *) * N);
-    int currentNodeSocketCount = 0;
+    nodeSockets = malloc(sizeof(struct NodeSocket *) * N);
+    
 
 
 	// SOCK_STREAM betyr TCP-type socket.
@@ -232,7 +235,7 @@ int initializeTCPServer(){
     printf("All nodes currently in system: \n");
     printAllNodeSockets(nodeSockets, currentNodeSocketCount);
 
-    printf("All Edges / Weights (nodeID)---- weight --->(nodeTargetID)  \n");
+    printf("All Edges / Weights \n (nodeID)  ---- weight --->  (nodeTargetID)  \n");
     printAllEdgesAndWeights(nodeSockets, currentNodeSocketCount);
 
 
@@ -240,11 +243,34 @@ int initializeTCPServer(){
     // When the code reaches this point all the nodes have successfully communicated
     // with the routing_server.
 
-    int i;
-    for( i = 0; i < currentNodeSocketCount; i++){
-        struct NodeSocket * socket = nodeSockets[i];
-        calculateDijkstrasShortestPathAndSendToSocket(socket);
+
+
+    // 1) CREATE SUFFICIENT STORAGE FOR SHORTEST PATHS.
+
+    // In my system this is stored in struct NodeSocket.
+    // But we need to allocate memory for the paths! ;) 
+    int i; 
+    for(i = 0; i < currentNodeSocketCount ; i++) {
+        nodeSockets[i]->pathFrom1 = malloc(sizeof(int) * currentNodeSocketCount);
+
+        int j;
+        for(j = 0; j < currentNodeSocketCount ; j++){
+            nodeSockets[i]->pathFrom1[j] = (int)(i * j);
+            printf("nodesockets[i]->pathFRom1[j] = %d", nodeSockets[i]->pathFrom1[j]);
+        }
+        printf("\n");
     }
+
+    
+
+    // Now we need to calculate and send back the Shortest Paths.
+    // From node 1 to all other nodes.
+    
+
+
+
+    // 2) Calculate shortest paths and store paths in NodeSockets.
+    calculateDijkstrasShortestPaths(nodeSockets);  
     
 
 
@@ -253,13 +279,26 @@ int initializeTCPServer(){
 
 
 
+    
+
+}
+
+
+void freeAllMemory(){
+
     // Free up dynamically allocated memory from nodeSockets.
     free(nodeSockets);
+    int i;
     for(i = 0; i < currentNodeSocketCount ; i++){
 
 
-        // TODO MÅ FRIGJØRE nodeSockets[i].nodes!"!#=)"!(#!"=)#((#=)!")
+        // TODO 1) MÅ FRIGJØRE nodeSockets[i].nodes!"!#=)"!(#!"=)#((#=)!")
 
+
+        // TODO 2) MÅ FRIGJØRE nodesockets[i].nodePathForm1 !=")#(!"=)#( )
+
+
+        // Til slutt frigjør pekeren selv.
         free(nodeSockets[i]);
     }
 
@@ -302,21 +341,63 @@ struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int 
 
 
 
-void calculateDijkstrasShortestPathAndSendToSocket(struct NodeSocket * socket){
-
-    // 1)  Find the correct NodeSocket to work with.
-
-    // 2)  Calculate the Routing Table for the NodeSocket.
-
-    // 3)  Send the routing data back to the socket.
+void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [],){
 
 
+    int Q[currentNodeSocketCount];
+    
+    // 1)  Calculate the Routing Table for the NodeSocket.
+    int dist[currentNodeSocketCount];
+    int prev[currentNodeSocketCount];
 
+    int i ; 
+    for(i = 0; i < currentNodeSocketCount; i++){
+        dist[i] = INT_MAX;
+        prev[i] = -1;
+        Q[i] = i;
+    }
+    dist[1] = 0;
+
+
+    while()
+    /*
+
+     from Wikipedia: ../wiki/Dijkstra%27s_algorithm
+        create vertex set Q
+ 
+        for each vertex v in Graph:             
+            dist[v] ← INFINITY                  
+            prev[v] ← UNDEFINED                 
+            add v to Q                      
+        dist[source] ← 0                        
+      
+        while Q is not empty:
+            u ← vertex in Q with min dist[u]    
+                                               
+            remove u from Q 
+          
+            for each neighbor v of u:           // only v that are still in Q
+                alt ← dist[u] + length(u, v)
+                if alt < dist[v]:               
+                    dist[v] ← alt 
+                    prev[v] ← u 
+  
+
+    */
+
+
+    // 2) Store the Route in each NodeSockets-pathFrom1 array.
+
+
+
+
+}
+
+void calculateRoutingTableForSocket(int nodeID){
 
     // RoutingTable Structure:
     // from    |  to        |   .... |  from      |    to        | '\0'
     // 4 bytes |  4 bytes   |        |  4 bytes   |    4 bytes   |
-
 
 }
 
