@@ -270,7 +270,7 @@ int initializeTCPServer(){
 
 
     // 2) Calculate shortest paths and store paths in NodeSockets.
-    calculateDijkstrasShortestPaths(nodeSockets);  
+    calculateDijkstrasShortestPaths(nodeSockets, 1 );  
     
 
 
@@ -339,30 +339,56 @@ struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int 
 }
 
 
+#define INFINITE_MAXIMA 99392392 // Egentlig infinity, trengte bare å gjøre koden litt morsom.
 
+void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
 
-void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [],){
-
-
-    int Q[currentNodeSocketCount];
+	printf("Dijkstra has started!!");
+	int N = currentNodeSocketCount;
+    int Q[N];
     
     // 1)  Calculate the Routing Table for the NodeSocket.
-    int dist[currentNodeSocketCount];
-    int prev[currentNodeSocketCount];
+    int dist[N]; // Denne vil holde avstanden til de ulike nodene.
+    int prev[N]; // Denne vil holde  
 
-    int i ; 
-    for(i = 0; i < currentNodeSocketCount; i++){
-        dist[i] = INT_MAX;
+    int i ;   /// Here i denotes the index of the various nodes in the NodeSocket nodes[] array.
+    for(i = 0; i < N; i++){
+        dist[i] = INFINITE_MAXIMA;
         prev[i] = -1;
         Q[i] = i;
     }
-    dist[1] = 0;
+
+    int startNodeIndex = getIndexOfNodeSocketWithNodeID(startNode);
+    printf("\n\nstartNode: %d     startNodeINdex : %d \n\n", startNode, startNodeIndex);
+    dist[startNodeIndex] = 0;
 
 
-    while()
+    // Is Q empty?
+
+    while(isArrayEmpty(&Q,N) == -1){
+    	// Find min dist[u];
+    	int u = findIndexInQWithMinDist(&Q, &dist, N);
+    	
+    	// Fjerner u fra Q.
+    	Q[u] = -1;
+
+
+    	// Bla igjennom alle naboene i noden vi jobber med for øyeblikket.
+    	// int i;
+    	// struct NodeSocket * currentNode = nodes[getIndexOfNodeSocketWithNodeID(u)];
+    	// for (i = 0; i < currentNode->nodeCount; i++ ){
+
+    	// 	int alt = dist[u] + 
+    	// }
+
+
+
+
+
+    }
     /*
 
-     from Wikipedia: ../wiki/Dijkstra%27s_algorithm
+     from Wikipedia: ../wiki/tDijkstra%27s_algorithm
         create vertex set Q
  
         for each vertex v in Graph:             
@@ -393,6 +419,40 @@ void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [],){
 
 }
 
+int lengthBetweenNodes(int indexA, int indexB){
+
+}
+
+// Returns the Index of the element with the least distance.
+int findIndexInQWithMinDist(int * Q, int * dist, int len){
+	int i;
+	int minDist = INFINITE_MAXIMA;
+	int indexOfMinDist = 0;
+	for(i = 0; i < len; i++){
+
+		// Check that the element is in Q and then check if the dist is smaller.
+		if(Q[i] != -1 && dist[i] < minDist){
+			minDist = dist[i];
+			indexOfMinDist = i;
+		}
+	}
+	printf("MinDistFound at index: %d    dist: ", indexOfMinDist, minDist );
+	return indexOfMinDist;
+}
+	
+// If One of the elements in the array is -1 ( which I use to denote emptiness )
+// Then the function returns -1 which means. NO its not empty.
+int isArrayEmpty(int * arr , int len){
+	int i; 
+	for(i = 0; i < len; i++){
+		if(arr[i] != -1){
+			return -1;
+		}
+	}
+
+	return 1;
+}
+
 void calculateRoutingTableForSocket(int nodeID){
 
     // RoutingTable Structure:
@@ -401,6 +461,16 @@ void calculateRoutingTableForSocket(int nodeID){
 
 }
 
+
+int getIndexOfNodeSocketWithNodeID(int nodeID){
+	int i ;
+	for(i = 0; i < currentNodeSocketCount;i++){
+		if(nodeSockets[i]->nodeID == nodeID)
+			return i;
+	}
+	// return -1 if it failed.
+	return -1;
+}
 
 void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len){
     int i = 0, j = 0;
