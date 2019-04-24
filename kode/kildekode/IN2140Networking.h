@@ -18,14 +18,19 @@ struct NodeSocket{
     int socketID;
     int nodeID;
     int nodeCount;
+    int shortestDistTo1;
     struct NodeInfo ** nodes;
     int * pathFrom1;
+    int * routingTable;
 };
 
 
 
 void printAllNodeSockets(struct NodeSocket * sockets [], int len );
 struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int len,  int socketID);
-void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode);
+void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode);
 void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len);
 int getIndexOfNodeSocketWithNodeID(int nodeID);
+void freeAllMemory();
+void printPath(int prev[] , int index);
+void calculateRoutingTableForAllNodeSockets(struct NodeSocket * nodeSockets []);
