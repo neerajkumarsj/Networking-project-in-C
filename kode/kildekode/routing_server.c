@@ -364,22 +364,32 @@ void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode
 
 
     // Is Q empty?
-
     while(isArrayEmpty(&Q,N) == -1){
+
+
+        printf("isArrayEmpty  %d ", isArrayEmpty(&Q,N));
+
+
     	// Find min dist[u];
     	int u = findIndexInQWithMinDist(&Q, &dist, N);
     	
+
+        if(u == -1){
+            printf("ERROR: indexWithSmallestDist =  -1 ! Thats should not happen");
+            break;
+        }
     	// Fjerner u fra Q.
     	Q[u] = -1;
 
 
     	// Bla igjennom alle naboene i noden vi jobber med for øyeblikket.
-    	// int i;
-    	// struct NodeSocket * currentNode = nodes[getIndexOfNodeSocketWithNodeID(u)];
-    	// for (i = 0; i < currentNode->nodeCount; i++ ){
+    	int i;
+    	struct NodeSocket * currentNode = nodes[getIndexOfNodeSocketWithNodeID(u)];
+    	for (i = 0; i < currentNode->nodeCount; i++ ){
 
-    	// 	int alt = dist[u] + 
-    	// }
+
+    	   // int alt = dist[u] + lengthBetweenNodes(currentNode, i);
+    	}
 
 
 
@@ -419,24 +429,24 @@ void calculateDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode
 
 }
 
-int lengthBetweenNodes(int indexA, int indexB){
-
-}
+// int lengthBetweenNodes(struct NodeSocket * node, int index){
+//     return node->nodes[index]->weight;
+// }
 
 // Returns the Index of the element with the least distance.
 int findIndexInQWithMinDist(int * Q, int * dist, int len){
 	int i;
 	int minDist = INFINITE_MAXIMA;
-	int indexOfMinDist = 0;
+	int indexOfMinDist = -1;
 	for(i = 0; i < len; i++){
 
 		// Check that the element is in Q and then check if the dist is smaller.
-		if(Q[i] != -1 && dist[i] < minDist){
+		if(Q[i] != -1 && dist[i] <= minDist){
 			minDist = dist[i];
 			indexOfMinDist = i;
 		}
 	}
-	printf("MinDistFound at index: %d    dist: ", indexOfMinDist, minDist );
+	printf("MinDistFound at index: %d    dist: %d", indexOfMinDist, minDist );
 	return indexOfMinDist;
 }
 	

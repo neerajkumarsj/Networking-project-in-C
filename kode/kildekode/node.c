@@ -111,12 +111,14 @@ int openTCPConnectionToRoutingServer(){
     	// 4 bytes   |    4 bytes   4 bytes   |     ...  |     4 bytes   4 bytes   |     1 byte.
 
     	char edgeWeightList [2048];
+        int i; 
+        printf("\n1024 first bytes of edgeWeightList BEFORE network-preparation =  \n");
+        for(i = 0; i< 2048; i++){
+            edgeWeightList[i] = 0;
+        }
+
+
     	int curIndex = 0;
-        int i;
-
-        
-
-
           printf("Looping through neighbours: \n ");
     	  for(i = 0; i < neighbourCount; i++){
 

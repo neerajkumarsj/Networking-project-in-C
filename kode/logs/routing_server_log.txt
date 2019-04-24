@@ -1,0 +1,159 @@
+Hello I'm routing_server.c 3All Arguments.
+argv[0] : -307598768 
+argv[1] : -307598751 
+argv[2] : -307598746 
+bind() called.
+listen() called.
+N = 8,   nodeConnectionsCountSoFar = 0
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 4 
+2048 bytes Recieved!! : Recieved message from socket: 4   message:
+amountOfEdgeWeights 3 
+nodeID[11] has Edge/weight;  to:  1     weight:    2 
+nodeID[11] has Edge/weight;  to:  13     weight:    7 
+nodeID[11] has Edge/weight;  to:  19     weight:    2 
+N = 8,   nodeConnectionsCountSoFar = 1
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 5 
+2048 bytes Recieved!! : Recieved message from socket: 5   message:
+amountOfEdgeWeights 2 
+nodeID[1] has Edge/weight;  to:  11     weight:    2 
+nodeID[1] has Edge/weight;  to:  103     weight:    6 
+N = 8,   nodeConnectionsCountSoFar = 2
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 6 
+2048 bytes Recieved!! : Recieved message from socket: 6   message:
+amountOfEdgeWeights 2 
+nodeID[17] has Edge/weight;  to:  13     weight:    3 
+nodeID[17] has Edge/weight;  to:  107     weight:    2 
+N = 8,   nodeConnectionsCountSoFar = 3
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 7 
+2048 bytes Recieved!! : Recieved message from socket: 7   message:
+amountOfEdgeWeights 3 
+nodeID[13] has Edge/weight;  to:  11     weight:    7 
+nodeID[13] has Edge/weight;  to:  17     weight:    3 
+nodeID[13] has Edge/weight;  to:  101     weight:    4 
+N = 8,   nodeConnectionsCountSoFar = 4
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 8 
+2048 bytes Recieved!! : Recieved message from socket: 8   message:
+amountOfEdgeWeights 3 
+nodeID[19] has Edge/weight;  to:  11     weight:    2 
+nodeID[19] has Edge/weight;  to:  101     weight:    2 
+nodeID[19] has Edge/weight;  to:  103     weight:    1 
+N = 8,   nodeConnectionsCountSoFar = 5
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 9 
+2048 bytes Recieved!! : Recieved message from socket: 9   message:e
+amountOfEdgeWeights 3 
+nodeID[101] has Edge/weight;  to:  13     weight:    4 
+nodeID[101] has Edge/weight;  to:  19     weight:    2 
+nodeID[101] has Edge/weight;  to:  107     weight:    2 
+N = 8,   nodeConnectionsCountSoFar = 6
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 10 
+2048 bytes Recieved!! : Recieved message from socket: 10   message:g
+amountOfEdgeWeights 3 
+nodeID[103] has Edge/weight;  to:  1     weight:    6 
+nodeID[103] has Edge/weight;  to:  19     weight:    1 
+nodeID[103] has Edge/weight;  to:  107     weight:    4 
+N = 8,   nodeConnectionsCountSoFar = 7
+accept() called!
+A TCP-client connected!!
+ client_socket_id = 11 
+2048 bytes Recieved!! : Recieved message from socket: 11   message:k
+amountOfEdgeWeights 3 
+nodeID[107] has Edge/weight;  to:  17     weight:    2 
+nodeID[107] has Edge/weight;  to:  101     weight:    2 
+nodeID[107] has Edge/weight;  to:  103     weight:    4 
+All nodes currently in system: 
+
+NodeID   : 11 
+SocketID : 4 
+
+ All neighbours
+From: 11  to: 1  weight: 2
+From: 11  to: 13  weight: 7
+From: 11  to: 19  weight: 2
+
+
+
+NodeID   : 1 
+SocketID : 5 
+
+ All neighbours
+From: 1  to: 11  weight: 2
+From: 1  to: 103  weight: 6
+
+
+
+NodeID   : 17 
+SocketID : 6 
+
+ All neighbours
+From: 17  to: 13  weight: 3
+From: 17  to: 107  weight: 2
+
+
+
+NodeID   : 13 
+SocketID : 7 
+
+ All neighbours
+From: 13  to: 11  weight: 7
+From: 13  to: 17  weight: 3
+From: 13  to: 101  weight: 4
+
+
+
+NodeID   : 19 
+SocketID : 8 
+
+ All neighbours
+From: 19  to: 11  weight: 2
+From: 19  to: 101  weight: 2
+From: 19  to: 103  weight: 1
+
+
+
+NodeID   : 101 
+SocketID : 9 
+
+ All neighbours
+From: 101  to: 13  weight: 4
+From: 101  to: 19  weight: 2
+From: 101  to: 107  weight: 2
+
+
+
+NodeID   : 103 
+SocketID : 10 
+
+ All neighbours
+From: 103  to: 1  weight: 6
+From: 103  to: 19  weight: 1
+From: 103  to: 107  weight: 4
+
+
+
+NodeID   : 107 
+SocketID : 11 
+
+ All neighbours
+From: 107  to: 17  weight: 2
+From: 107  to: 101  weight: 2
+From: 107  to: 103  weight: 4
+
+
+All Edges / Weights 
+ (nodeID)  ---- weight --->  (nodeTargetID)  
+ (11)  ----- 2 ------>  (1)  
+ (11)  -----
