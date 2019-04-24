@@ -15,7 +15,7 @@
 int PORT = 0;
 int N = 0;  // N = antall noder i systemet.
 
-char clientResponseBuffer [2048];
+char TCPBuffer [2048];
 
 struct NodeSocket ** nodeSockets;
 int currentNodeSocketCount = 0;
@@ -121,22 +121,22 @@ int initializeTCPServer(){
             nodeSockets[currentNodeSocketCount]->nodes = NULL;
             currentNodeSocketCount ++;
 
-            int bytesRecieved = recv(client_socket, &clientResponseBuffer, sizeof(clientResponseBuffer),0);
+            int bytesRecieved = recv(client_socket, &TCPBuffer, sizeof(TCPBuffer),0);
 
             if(bytesRecieved > 0){
 
-                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, client_socket, clientResponseBuffer);
+                printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, client_socket, TCPBuffer);
 
 
                 // Decode data from socket.
                 struct NodeSocket * currSock = getNodeSocketBySocketId(nodeSockets, currentNodeSocketCount, client_socket);
 
                 // Copy in the ID of the node.
-                memcpy(&currSock->nodeID, &clientResponseBuffer, sizeof(int));
+                memcpy(&currSock->nodeID, &TCPBuffer, sizeof(int));
                 int readIndex = sizeof(int);
 
                 // Count all the weights:
-                while(clientResponseBuffer[readIndex] != '\0'){
+                while(TCPBuffer[readIndex] != '\0'){
                     readIndex += sizeof(int) * 2;
                 }
                 int amountOfEdgeWeights = readIndex / 4 / 2;
@@ -152,14 +152,14 @@ int initializeTCPServer(){
                 readIndex = sizeof(int);
                 // Copy in all the weights.
                 int curEdgeWeightIndex = 0;
-                while(clientResponseBuffer[readIndex] != '\0'){
+                while(TCPBuffer[readIndex] != '\0'){
 
                     // Allocate dynamic space for a struct NodeInfo! To holde Weight / Edges.
                     currSock->nodes[curEdgeWeightIndex] = malloc( sizeof(struct NodeInfo) );
 
-                    int to     =  clientResponseBuffer[readIndex];
+                    int to     =  TCPBuffer[readIndex];
                     readIndex += 4; 
-                    int weight =  clientResponseBuffer[readIndex];
+                    int weight =  TCPBuffer[readIndex];
                     readIndex += 4;
                     printf("nodeID[%d] has Edge/weight;  to:  %d     weight:    %d \n",currSock->nodeID, to,weight );
 
@@ -177,10 +177,7 @@ int initializeTCPServer(){
 
 
                 // Clean up the buffer.
-                int i;
-                for(i = 0; i < 2048 ; i++ ){
-                    clientResponseBuffer [i] = 0;
-                }
+                clearTCPBuffer();
 
 
 
@@ -296,19 +293,47 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets) {
 
 	int i; 
 
-	char memBuff[2048]; 
+	// RoutingTable Structure:
+    // len        | from    |  to        |   .... |  from      |    to        | '\0'
+    // 4 bytes    | 4 bytes |  4 bytes   |        |  4 bytes   |    4 bytes   |
+
+	char TCPBuffer[2048]; 
+	int bufferIndex = 0;
 	for( i = 0 ; i < N; i++){
 
+		clearTCPBuffer();
+		bufferIndex = sizeof(int);
+		
+     	int j;
+		for(j = 0; j < N ; j++){
+			
+
+			// Copy routing-data into the buffer that will be sent over TCP back to the Node.
+			if(nodeSockets[i]->routingTable[j] != -1 ){
+				// memcpy(dest, src, size_t)
+				memcpy(TCPBuffer[bufferIndex],nodeSockets[i]->nodeID, sizeof(int)); 	
+				bufferIndex += sizeof(int);
+				memcpy(TCPBuffer[bufferIndex],nodeSockets[j]->nodeID, sizeof(int)); 	
+			}
+			
+		}
 
 
+		// int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+		int bytesSent = send(nodeSockets[i]->socketID, memBuff, sizeof(memBuff), 0);
 
-
-
-		send(nodeSockets[i], );
 	}
 
 }
 
+
+void clearTCPBuffer(){
+	int i;
+    for(i = 0; i < 2048 ; i++ ){
+        TCPBuffer [i] = 0;
+    }
+
+}
 
 void freeAllMemory(){
 
@@ -477,13 +502,6 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
     printAllNodeSockets(nodes, N);
 
 
-  
-
-    
-
-
-
-
 }
 
 int isIndexInArrayEmpty(int * arr, int len, int index){
@@ -539,9 +557,6 @@ void calculateRoutingTableForAllNodeSockets(struct NodeSocket * nodes []){
 
 	// Routing table is stored inside each NodeSocekt int * 
 
-    // RoutingTable Structure:
-    // from    |  to        |   .... |  from      |    to        | '\0'
-    // 4 bytes |  4 bytes   |        |  4 bytes   |    4 bytes   |
 
 	int i; 
     for(i = 0; i < N; i++){
