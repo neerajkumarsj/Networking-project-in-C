@@ -16,11 +16,23 @@ char buffer [2048];
 int OwnAddress = -1;
 int BasePort = -1;
 
+char TCPBuffer [2048];
+
+
+// Noen prototyper.
 void initializeNode(int, char **);
+void printRoutingTable(void);
+int isDestinationInRoutingTable(int id);
+int getNextHopByDestination(int dest);
+void fetchRoutingTableFromServer(int serverSocket);
+
+
 
 int neighbourCount = 0; // Amount of neighbouring nodes.
 struct NodeInfo * neighbourNodes; // Array that holds references to all neighboring nodes and their weights.
 
+struct RoutingTableNode ** routingTable; // Inneholder informasjon om alle nestehoppene denne noden er ansvarlig for.
+int tableSize = 0;
 
 
 
@@ -35,6 +47,8 @@ int main(int argc, char * argv[]){
 	openUDPConnectionsToNeighbours();
 
 	printNodeInfo();
+
+    freeAllAllocatedMemory();
 
 	return 0;
 }
@@ -149,27 +163,27 @@ int openTCPConnectionToRoutingServer(){
 
 
 
-    	char nodeInfoTCPBuffer [2048];
+    	
 
 
-        /// Clear the nodeInfoTCPBuffer first. It might have dirty data on it.
-        printf("\n1024 first bytes of nodeInfoTCPBuffer BEFORE network-preparation =  \n");
+        /// Clear the TCPBuffer first. It might have dirty data on it.
+        printf("\n1024 first bytes of TCPBuffer BEFORE network-preparation =  \n");
         for(i = 0; i< 2048; i++){
-            nodeInfoTCPBuffer[i] = 0;
+            TCPBuffer[i] = 0;
         }
 
     	int lastIndex = 0;
-    	memcpy(&nodeInfoTCPBuffer, &OwnAddress, sizeof(int));
+    	memcpy(&TCPBuffer, &OwnAddress, sizeof(int));
     	lastIndex = sizeof(int);
 
-    	//snprintf(nodeInfoTCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
-    	memcpy(&nodeInfoTCPBuffer[lastIndex], &edgeWeightList, curIndex);
+    	//snprintf(TCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
+    	memcpy(&TCPBuffer[lastIndex], &edgeWeightList, curIndex);
 
 
 
-    	printf("\n1024 first bytes of nodeInfoTCPBuffer after network-preparation =  \n");
-    	for(i = 0; i< 1024; i++){
-    		printf("%d",nodeInfoTCPBuffer[i]);
+    	printf("\n2048 first bytes of TCPBuffer after network-preparation =  \n");
+    	for(i = 0; i< 2048; i++){
+    		printf("%d",TCPBuffer[i]);
     	}
 
 
@@ -178,26 +192,21 @@ int openTCPConnectionToRoutingServer(){
 
     	// eksempel
     	// send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
-    	// printf("Attempting to send data: %s\n", nodeInfoTCPBuffer);
-        int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
+    	// printf("Attempting to send data: %s\n", TCPBuffer);
+        int bytesSent = send(socketToRouter,TCPBuffer, sizeof(TCPBuffer),0);
 
-        printf("returnvalue from send() : %d", bytesSent);
-
-
+        printf("returnvalue from send() : %d\n", bytesSent);
 
 
+        for(i = 0; i < 2048 ; i++){
+            TCPBuffer[i] = 0;
+        }
 
 
+        
+        fetchRoutingTableFromServer(socketToRouter);
 
-        // #3 Vent på ruter-data fra hovedprogrammet
-
-
-
-
-        // #4 Lagre rute-tabellen 
-
-
-
+        printRoutingTable();
 
 
         // #5 Terminér TCP-tilkoblingen med rute_serveren.
@@ -216,6 +225,52 @@ int openTCPConnectionToRoutingServer(){
 }
 
 
+void fetchRoutingTableFromServer(int serverSocket){
+
+
+        // #3 Vent på ruter-data sendt med TCP fra hovedprogrammet.
+        int bytesRecieved = recv(serverSocket, &TCPBuffer, sizeof(TCPBuffer),0 );
+
+        printf("returnvalue from recv() : %d\n", bytesRecieved);
+        int i; 
+        for(i = 0; i < 2048 ; i++){
+            printf("%d",TCPBuffer[i]);
+        }
+
+        int readIndex = 0; 
+      
+        // #4 Lagre rute-tabellen
+
+        // Først størrelsen som lagres i Table size
+        memcpy(&tableSize, &TCPBuffer, sizeof(int));
+        tableSize = tableSize / 2 / 4; 
+
+
+        printf("Amount of nextHops stored in the routing table: %d ", tableSize);
+        routingTable = malloc(sizeof(struct RoutingTableNode * ) * tableSize);
+
+        
+        readIndex = sizeof(int);
+
+        for(i = 0; i < tableSize ; i++){
+
+            // allokér minne til en struct RoutingTableNode
+            routingTable[i] = (struct RoutingTableNode * ) malloc(sizeof(struct RoutingTableNode));
+
+            // Kopiér inn en int som henviser til destinasjon
+            memcpy(&routingTable[i]->destination, &TCPBuffer[readIndex], sizeof(int));
+            readIndex += sizeof(int);
+
+            // Kopiér inn en int som henviser til neste Node hvis man skal til destinasjonen.
+            memcpy(&routingTable[i]->nextHop, &TCPBuffer[readIndex], sizeof(int));
+            readIndex += sizeof(int);            
+        }
+
+
+
+}
+
+
 
 int openUDPConnectionsToNeighbours(){
 
@@ -228,10 +283,46 @@ void parseCommandFromUDPSocket(){
 }
 
 
+int isDestinationInRoutingTable(int id){
+    int i; 
+    printf("\n\n");
+    for( i = 0 ; i < tableSize; i++){
+        if(id == routingTable[i]->destination){
+            return 1;
+        }
+    }
+
+    return -1;
+}
+
+int getNextHopByDestination(int dest){
+    int i; 
+    printf("\n\n");
+    for( i = 0 ; i < tableSize; i++){
+        if(dest == routingTable[i]->destination){
+            return routingTable[i]->nextHop;
+        }
+    }
+    return -1;
+}
+
+void printRoutingTable(){
+    int i; 
+    printf("\n\n");
+    for( i = 0 ; i < tableSize; i++){
+        printf("routingTable[%d] destination:%d -- nextHop -> %d \n", i , routingTable[i]->destination, routingTable[i]->nextHop);
+    }
+}
 
 
 void freeAllAllocatedMemory (){
-
+    int i;
+    for(i = 0; i < tableSize ; i++){
+        // Frigjør pekerene til RoutingTableNode
+        //free(routingTable[i]);
+    }
+    // Frigjør hele Routing Tabelet
+    free(routingTable);
 	free(neighbourNodes);
 }
 

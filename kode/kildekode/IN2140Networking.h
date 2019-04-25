@@ -25,12 +25,26 @@ struct NodeSocket{
 };
 
 
+struct RoutingTableNode{
+	int destination;
+	int nextHop;
+	int UDPsocketID;
+};
 
+
+void clearTCPBuffer();
 void printAllNodeSockets(struct NodeSocket * sockets [], int len );
 struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int len,  int socketID);
-void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode);
+
 void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len);
 int getIndexOfNodeSocketWithNodeID(int nodeID);
-void freeAllMemory();
+
 void printPath(int prev[] , int index);
-void calculateRoutingTableForAllNodeSockets(struct NodeSocket * nodeSockets []);
+
+
+void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode);
+void CalculateRoutingTableForAllNodeSockets(struct NodeSocket * nodeSockets []);
+void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []);
+
+
+void freeAllAllocatedMemory();

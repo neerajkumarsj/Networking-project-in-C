@@ -21,7 +21,8 @@ struct NodeSocket ** nodeSockets;
 int currentNodeSocketCount = 0;
 
 
-
+void printBuffer(char * arr, int len);
+void printRoutingTables(struct NodeSocket * sockets []);
 
 
 
@@ -276,22 +277,31 @@ int initializeTCPServer(){
     CalculateRoutingTableForAllNodeSockets(nodeSockets);
 
     // Print Routing Tables
-    for(i = 0; i < N; i++){
-    	int j; 
-    	for(j = 0; j < N; j++){
-    		printf("nodeId: %d -> [%d] = %d\n",nodeSockets[i]->nodeID, nodeSockets[j]->nodeID, nodeSockets[i]->routingTable[j]);
-    	}
-    }
+    printRoutingTables(nodeSockets);
 
 
-    freeAllMemory();
+    sendBackRoutingTablesToAllNodeSockets(nodeSockets);
+
+    freeAllAllocatedMemory();
     
 
 }
 
-void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets) {
 
-	int i; 
+void printRoutingTables(struct NodeSocket * nodeSockets []){
+    int i;
+    for(i = 0; i < N; i++){
+        int j; 
+        for(j = 0; j < N; j++){
+            printf("nodeId: %d -> [%d] = %d\n",nodeSockets[i]->nodeID, nodeSockets[j]->nodeID, nodeSockets[i]->routingTable[j]);
+        }
+    }
+}
+
+void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []) {
+
+
+    printf("\n\nSending back routing Tables over TCP: \n")  ;
 
 	// RoutingTable Structure:
     // len        | from    |  to        |   .... |  from      |    to        | '\0'
@@ -299,28 +309,40 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets) {
 
 	char TCPBuffer[2048]; 
 	int bufferIndex = 0;
+    int i; 
 	for( i = 0 ; i < N; i++){
 
+        printf("\nSending back Routing Table for nodeID:  %d\n", nodeSockets[i]->nodeID);
 		clearTCPBuffer();
 		bufferIndex = sizeof(int);
 		
-     	int j;
+     	int j, validPairCount = 0;
 		for(j = 0; j < N ; j++){
 			
-
+             
 			// Copy routing-data into the buffer that will be sent over TCP back to the Node.
 			if(nodeSockets[i]->routingTable[j] != -1 ){
 				// memcpy(dest, src, size_t)
-				memcpy(TCPBuffer[bufferIndex],nodeSockets[i]->nodeID, sizeof(int)); 	
+				memcpy(&TCPBuffer[bufferIndex], &nodeSockets[j]->nodeID, sizeof(int)); 	
 				bufferIndex += sizeof(int);
-				memcpy(TCPBuffer[bufferIndex],nodeSockets[j]->nodeID, sizeof(int)); 	
+				memcpy(&TCPBuffer[bufferIndex], &nodeSockets[i]->routingTable[j], sizeof(int)); 	
+                bufferIndex += sizeof(int);
+                validPairCount++;
 			}
 			
 		}
 
+        // Finally store the length (in bytes) of the remaining data.
+        int validDataLength = validPairCount * 4 * 2;
+        char nullChar = '\0';
+        memcpy(&TCPBuffer, &validDataLength, sizeof(int) );
+        memcpy(&TCPBuffer[bufferIndex], &nullChar, 1);
+
+        printf("LENGTH OF DATA: %d \n", validDataLength) ;
+        printBuffer(TCPBuffer,2048);
 
 		// int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
-		int bytesSent = send(nodeSockets[i]->socketID, memBuff, sizeof(memBuff), 0);
+		int bytesSent = send(nodeSockets[i]->socketID, &TCPBuffer, sizeof(TCPBuffer), 0);
 
 	}
 
@@ -335,7 +357,15 @@ void clearTCPBuffer(){
 
 }
 
-void freeAllMemory(){
+
+void printBuffer(char * arr, int len){
+    int i;
+    for(i = 0; i < len-1; i++){
+        printf("%d ",arr[i]);
+    }
+}
+
+void freeAllAllocatedMemory(){
 
     // Free up dynamically allocated memory from nodeSockets.
     
@@ -416,9 +446,9 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
 	int N = currentNodeSocketCount;
     int Q[N];
     
-    // 1)  Calculate the Routing Table for the NodeSocket.
+
     int dist[N]; // Denne vil holde avstanden til de ulike nodene.
-    int prev[N]; // Denne vil holde path.
+    int prev[N]; // Denne vil holde forrige data.
 
     int i ;   /// Here i denotes the index of the various nodes in the NodeSocket nodes[] array.
     for(i = 0; i < N; i++){
@@ -430,7 +460,7 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
     int startNodeIndex = getIndexOfNodeSocketWithNodeID(startNode);
     printf("\n\nstartNode: %d     startNodeINdex : %d \n\n", startNode, startNodeIndex);
 
-    // Avstanden til startnoden vil alltid være 0.
+    // Avstanden til startNoden vil alltid være 0.
     dist[startNodeIndex] = 0;
 
 
@@ -441,21 +471,12 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
     	// Find min dist[u];
     	int u = findIndexInQWithMinDist(&Q, &dist, N);
     	
-
-        // if(u == -1){
-        //     printf("ERROR: indexWithSmallestDist =  -1 ! That should not happen\n");
-        //     exit(EXIT_FAILURE);
-        //     break;
-        // }
-    	// Fjerner u fra Q.
     	Q[u] = -1;
 
 
     	// Bla igjennom alle naboene i noden vi jobber med for øyeblikket.
     	int i, alt;
-    	struct NodeSocket * currentNode = nodes[u];
-    	//printf("Iterating through neighbour-nodes of u: %d   with nodeID: %d\n",u, currentNode->nodeID);
-    	
+    	struct NodeSocket * currentNode = nodes[u];	
     	for (i = 0; i < currentNode->nodeCount; i++ ){
 
     		int v = getIndexOfNodeSocketWithNodeID(currentNode->nodes[i]->to);
@@ -475,19 +496,9 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
             	dist[v] = alt;
             	prev[v] = u;
             }
-    	 //   printf("[i]= %d  [u] = %d distanceBetweenNodes: %d      alt: %d \n",v,u,distanceBetweenNodes, alt);
-
-
-
 
     	}
 
-    }
-
-
-   // printf("\n\nDijskstras has ended!!  results: \n");
-    for(i = 0; i < N; i++){
-    //	printf("i: %d  nodeID: %d  prev[i] = %d,     dist[i] %d \n", i, nodes[i]->nodeID,  prev[i], dist[i]);
     }
 
 
@@ -553,7 +564,7 @@ int isArrayEmpty(int * arr , int len){
 	return 1;
 }
 
-void calculateRoutingTableForAllNodeSockets(struct NodeSocket * nodes []){
+void CalculateRoutingTableForAllNodeSockets(struct NodeSocket * nodes []){
 
 	// Routing table is stored inside each NodeSocekt int * 
 
@@ -575,7 +586,7 @@ void calculateRoutingTableForAllNodeSockets(struct NodeSocket * nodes []){
 	    	for(k = 0; k < N; k++){
 	    		// If any of the nodes include this node's ID
 	    		if(nodes[j]->pathFrom1[k] == nodes[i]->nodeID){
-	    			printf("MATCH FOUND %d , %d ",nodes[j]->pathFrom1[k], nodes[i]->nodeID );
+	    			// printf("MATCH FOUND %d , %d ",nodes[j]->pathFrom1[k], nodes[i]->nodeID );
 	    			if(nodes[j]->pathFrom1[k+1] != -1){
 	    				nodes[i]->routingTable[j] = nodes[j]->pathFrom1[k+1];
 	    			}
