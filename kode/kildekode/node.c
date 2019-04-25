@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h> // For å kunne bruke memcpy.
 
-#include <unistd.h> // For å kunne stenge en socket med close().
+#include <unistd.h> // For å kunne stenge en socket med close(). OG sleep(1) 
 #include <sys/socket.h> // For det standardisérte socket-API'et.
 #include <sys/types.h> // For noen av typene som kreves for å få sockets til å funke.
 
@@ -25,6 +25,8 @@ void printRoutingTable(void);
 int isDestinationInRoutingTable(int id);
 int getNextHopByDestination(int dest);
 void fetchRoutingTableFromServer(int serverSocket);
+void listenForUDPPackages(void);
+int openUDPConnectionsToNeighbours(void);
 
 
 
@@ -35,6 +37,8 @@ struct RoutingTableNode ** routingTable; // Inneholder informasjon om alle neste
 int tableSize = 0;
 
 
+int UDPserverSocket = -1;
+struct sockaddr_in udpServerAdresse;
 
 int main(int argc, char * argv[]){
 
@@ -44,9 +48,21 @@ int main(int argc, char * argv[]){
 
 	openTCPConnectionToRoutingServer();
 
-	openUDPConnectionsToNeighbours();
+    // Print some statistics to make sure it was done right.
+    printNodeInfo();
 
-	printNodeInfo();
+	UDPserverSocket = openUDPServerConnection();
+
+    if(UDPserverSocket != -1){
+        printf("UDP ServerSocket was successfully created! Port: %d \n", BasePort+OwnAddress);
+    }
+
+
+
+    int result = openUDPConnectionsToNeighbours();
+
+    listenForUDPPackages();
+	
 
     freeAllAllocatedMemory();
 
@@ -163,9 +179,6 @@ int openTCPConnectionToRoutingServer(){
 
 
 
-    	
-
-
         /// Clear the TCPBuffer first. It might have dirty data on it.
         printf("\n1024 first bytes of TCPBuffer BEFORE network-preparation =  \n");
         for(i = 0; i< 2048; i++){
@@ -271,17 +284,78 @@ void fetchRoutingTableFromServer(int serverSocket){
 }
 
 
+int openUDPServerConnection(){
+
+    int socketToRouter = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if(socketToRouter == -1 ){
+        printf("\nCreating the socket failed!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    udpServerAdresse.sin_family = AF_INET;
+    udpServerAdresse.sin_port = htons(BasePort+OwnAddress);
+    udpServerAdresse.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0 ( localhost ).
+
+    if ( bind(socketToRouter, (struct sockaddr *) &udpServerAdresse, sizeof(udpServerAdresse)) < 0 ){ 
+        printf("\nBinding the socket failed!!! :/ Try another port number! :)  \n");
+        exit(EXIT_FAILURE); 
+    } 
+
+    return socketToRouter;
+}
+
 
 int openUDPConnectionsToNeighbours(){
 
-	return 0;
-}
+    // Test::  prøv å connect til Node 11 fra 1.
+    if(OwnAddress == 1){
 
+        struct sockaddr_in udpClientAddress;
+
+        int socket11 = socket(AF_INET, SOCK_DGRAM, 0);
+        if(socket11 < 0){
+            printf("UDP-Connection from  %d -> %d failed!\n", OwnAddress, 11);
+            exit(EXIT_FAILURE);
+        }
+
+        // Filling server information 
+        udpClientAddress.sin_family = AF_INET; 
+        udpClientAddress.sin_port = htons(BasePort + 11); 
+        udpClientAddress.sin_addr.s_addr = INADDR_ANY;
+
+        char * str = "omggg\0";
+        sendto(socket11, str , str, MSG_CONFIRM, (struct udpClientAddress *) &udpClientAddress,sizeof(udpClientAddress));
+
+
+    }
+
+
+    return -1;
+}
 
 void parseCommandFromUDPSocket(){
 
 }
 
+
+void listenForUDPPackages(){
+    // n = recvfrom(sockfd, (char *)buffer, MAXLINE,  
+    //             MSG_WAITALL, (struct sockaddr *) &servaddr, 
+    //             &len); 
+
+    char UDPBuffer [2048]; 
+    int bytesRecieved = recvfrom(UDPserverSocket, UDPBuffer
+         , 2048 , MSG_WAITALL, (struct sockaddr_in *) &udpServerAdresse, sizeof(udpServerAdresse));
+
+    printf("\nUDPBuffer value: \n", UDPBuffer);
+}
+
+
+int UPDpreparePackage(int nodeIDTo){
+
+
+}
 
 int isDestinationInRoutingTable(int id){
     int i; 

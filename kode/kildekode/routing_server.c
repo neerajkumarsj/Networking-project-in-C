@@ -321,7 +321,7 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []) {
 			
              
 			// Copy routing-data into the buffer that will be sent over TCP back to the Node.
-			if(nodeSockets[i]->routingTable[j] != -1 ){
+			if(nodeSockets[i]->routingTable[j] != -1 && nodeSockets[j]->nodeID != 1){
 				// memcpy(dest, src, size_t)
 				memcpy(&TCPBuffer[bufferIndex], &nodeSockets[j]->nodeID, sizeof(int)); 	
 				bufferIndex += sizeof(int);
@@ -338,7 +338,7 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []) {
         memcpy(&TCPBuffer, &validDataLength, sizeof(int) );
         memcpy(&TCPBuffer[bufferIndex], &nullChar, 1);
 
-        printf("LENGTH OF DATA: %d \n", validDataLength) ;
+        printf("DataSize: %d bytes. + 4 bytes for this int.\n", validDataLength) ;
         printBuffer(TCPBuffer,2048);
 
 		// int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
@@ -547,7 +547,7 @@ int findIndexInQWithMinDist(int * Q, int * dist, int len){
 			indexOfMinDist = i;
 		}
 	}
-	printf("MinDistFound at index: %d    dist: %d", indexOfMinDist, minDist );
+	
 	return indexOfMinDist;
 }
 	
@@ -576,7 +576,9 @@ void CalculateRoutingTableForAllNodeSockets(struct NodeSocket * nodes []){
     	nodes[i]->routingTable   = malloc(sizeof(int) * N);
 
     	int j;
-	    for(j = 0; j < N; j++){
+
+        // Set the first node which tells us about the startingNode
+	    for(j = 1; j < N; j++){
 
 	    	int k;
 	    	// Set default value for the routing table.
@@ -626,7 +628,11 @@ void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len){
 
 int savePathRecursivelyToIntArray(int * prev  , int index, int * destinationArray, int currIndex) { 
       
-    if(prev[index] == -1) return;
+    if(prev[index] == -1){
+        // Add the last index to the Path.
+        destinationArray[currIndex] = 1;
+        return;
+    }
 	destinationArray[currIndex] = nodeSockets[index]->nodeID;
 	currIndex++;
     savePathRecursivelyToIntArray(prev, prev[index], destinationArray, currIndex); 
