@@ -21,9 +21,10 @@ struct NodeSocket ** nodeSockets;
 int currentNodeSocketCount = 0;
 
 
+void initializeTCPServer(void);
 void printBuffer(char * arr, int len);
 void printRoutingTables(struct NodeSocket * sockets []);
-
+void savePathRecursivelyToIntArray(int * prev  , int index, int * destinationArray, int currIndex);
 
 
 int main(int argc, char* argv[]){
@@ -73,7 +74,7 @@ int main(int argc, char* argv[]){
 int nodeConnectionsCountSoFar = 0;
 
 
-int initializeTCPServer(){
+void initializeTCPServer(){
 
 
     // Lag en NodeSocket liste som alle nodene kan lagres i. ( Vil brukes som Graf for Dijsktras senere ).
@@ -435,6 +436,8 @@ struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int 
         }
     }
 
+    return NULL;
+
 }
 
 
@@ -626,7 +629,7 @@ void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len){
 }
 
 
-int savePathRecursivelyToIntArray(int * prev  , int index, int * destinationArray, int currIndex) { 
+void savePathRecursivelyToIntArray(int * prev  , int index, int * destinationArray, int currIndex) { 
       
     if(prev[index] == -1){
         // Add the last index to the Path.
@@ -637,6 +640,7 @@ int savePathRecursivelyToIntArray(int * prev  , int index, int * destinationArra
 	currIndex++;
     savePathRecursivelyToIntArray(prev, prev[index], destinationArray, currIndex); 
     
+    return;
 } 
   
 int reversePathArray(int * array, int len ){
