@@ -18,6 +18,11 @@ int BasePort = -1;
 
 char TCPBuffer [2048];
 
+// Value that denotes wether or not we are listening for 
+// Incoming UDP-packages. // When this turns into -1 the listening stops.
+// And the node terminates.
+int isListening = 1;
+
 
 // Self-management prototyper
 void initializeNode(int, char **);
@@ -52,6 +57,9 @@ int main(int argc, char * argv[]){
 	
 	initializeNode(argc, argv);
 
+
+	// Denne funksjonen henter også ut rutingtabellen og lagrer den i 
+	// routingTable. 
 	openTCPConnectionToRoutingServer();
 
     // Print some statistics to make sure initializtion of the NodeInfo struct
@@ -70,6 +78,7 @@ int main(int argc, char * argv[]){
 
     if(OwnAddress == 1){
 
+    	printf("This is node 1! Preparing sending of UDP packages: \n");
         int result = sendUDPPackagesThroughNetwork();
 
     }else{
@@ -229,7 +238,6 @@ int openTCPConnectionToRoutingServer(){
             TCPBuffer[i] = 0;
         }
 
-
         
         fetchRoutingTableFromServer(socketToRouter);
 
@@ -273,7 +281,7 @@ void fetchRoutingTableFromServer(int serverSocket){
         tableSize = tableSize / 2 / 4; 
 
 
-        printf("Amount of nextHops stored in the routing table: %d ", tableSize);
+        printf("\nAmount of nextHops stored in the routing table: %d \n", tableSize);
         routingTable = malloc(sizeof(struct RoutingTableNode * ) * tableSize);
 
         
@@ -327,8 +335,17 @@ int sendUDPPackagesThroughNetwork(){
 
         FILE * dataFile = fopen("data.txt","r");
 
+        char messageBuffer[2048];
         while(!feof(dataFile)){
-            char messageBuffer[2048];
+
+
+        	// clear messageBuffer
+        	int i; 
+        	for(i = 0; i < 2048; i++){
+        		messageBuffer[i] = 0;
+        	}
+
+            
             int destination = 0; 
         
             fscanf(dataFile, "%d", &destination);
@@ -345,6 +362,7 @@ int sendUDPPackagesThroughNetwork(){
             }
 
 
+            messageBuffer[currReadIndex] = '\0';
             // Hvis destination nå er 0 betyr det at alle meldingene er lest fra data.txt.
             if(destination != 0){
                 // Legg til 0 terminering må meldinge bufferen.
@@ -355,17 +373,20 @@ int sendUDPPackagesThroughNetwork(){
                 printf("\nRead with fscanf dest: %d   message: %s  \n", destination, messageBuffer );    
 
 
-                /// Get nextHop 
+                /// Hent nextHop 
                 int nextHop = getNextHopByDestination(destination);
 
-                // construct the package.
-                char * package = constructUDPPackage(destination, OwnAddress, &messageBuffer);
+                // Konstuér UDP-pakken.
+                char * package = constructUDPPackage(destination, OwnAddress, messageBuffer);
 
-                // Use the print_pkt function to check it the package is correct.
+                // bruk print_pkt funksjonen for å sjekke om pakken er korrekt laget.
                 print_pkt(package);
 
-                sendPackageToDesination(nextHop, destination, OwnAddress, &package);
+                // Send pakken av gårde dit den skal.
+                sendPackageToDesination(nextHop, destination, OwnAddress, package);
 
+
+                // Frigjør pakken.
                 free(package);
 
 
@@ -402,12 +423,12 @@ int sendUDPPackagesThroughNetwork(){
 }
 
 
-char * constructUDPPackage(int destination, int source, char * message){
+char * constructUDPPackage(int destination, int source, char message []){
     // Format  2 bytes = packet length | dest address  | source address | messsage that must be '\0' terminated.
 
     // packageBuffer er 2048 bytes.
 
-    printf("COntructing package: dest: %d    src: %d     msg:  %s",destination, source, message);
+    printf("Constructing package: dest: %d    src: %d     msg:  %s\n",destination, source, message);
     printf("message to be sent: \n");
 
     int i; 
@@ -419,20 +440,54 @@ char * constructUDPPackage(int destination, int source, char * message){
 
     int packageLength = strlen(message);
 
-    char * pckg = malloc(2 + 2 + 2 + packageLength);
+    printf("Suggested package length: %d \n", packageLength);
 
-qwe qowiejqwoiej 
+    char * pckg = malloc(2 + 2 + 2 + packageLength + 1);
+
+    char nullByte = '\0';
     memcpy(&pckg[0],&packageLength,2);
     memcpy(&pckg[2],&destination,2);
     memcpy(&pckg[4],&source,2);
-    memcpy(&pckg[6],&message, packageLength);
+    memcpy(&pckg[6],message, packageLength);
+    memcpy(&pckg[6+packageLength],&nullByte,1);
+
+    printf("Printing Package Just after copying it. &pckg[6] -> packageLength\n");
+    printf("%s", &pckg[6]);
+    printf("\nPrinting package OVER.\n");
 
     return pckg;
 
 
+}
 
+
+
+void printPackage(char * package){
+
+	// read len
+	short len, dest, source;
+	memcpy(&len, &package[0], 2);
+	memcpy(&dest, &package[2],  2);
+	memcpy(&source, &package[4], 2);
+
+	printf("PackageLength: %d dest: %d   source: %d ", len, dest, source);
+
+	printf("\n data in package: \n");
+	int index ;
+	for( index = 6 ; index < len ; index++){
+	 	printf("%c", package[index]);
+	}
+	printf("\n");
 
 }
+
+
+int getPackageLength(char * package){
+	short len;
+	memcpy(&len, &package[0], 2);
+	return len;
+}
+
 
 
 void sendPackageToDesination(int nextHop, int destination, int source, char * package){
@@ -445,7 +500,7 @@ void sendPackageToDesination(int nextHop, int destination, int source, char * pa
             exit(EXIT_FAILURE);
         }
 
-        // Filling server information 
+        // Fyller inn klientens UDP-socket informasjon.
         udpClientAddress.sin_family = AF_INET; 
         udpClientAddress.sin_port = htons(BasePort + nextHop); 
         udpClientAddress.sin_addr.s_addr = INADDR_ANY;
@@ -454,21 +509,17 @@ void sendPackageToDesination(int nextHop, int destination, int source, char * pa
         printf("Sent UDP-message from %d --> %d \n", OwnAddress , nextHop);
         printf("Package:  %s \n", package);
 
-
+        printPackage(package);
 
          /* sendto(sockfd, (const char *)hello, strlen(hello), 
           MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
             sizeof(servaddr));  */ 
 
         
-        int bytesSent = sendto(outSocket, package , strlen(package), MSG_CONFIRM, (struct sockaddr *) &udpClientAddress, sizeof(udpClientAddress));
+        int bytesSent = sendto(outSocket, package , 7 + getPackageLength(package), MSG_CONFIRM, (struct sockaddr *) &udpClientAddress, sizeof(udpClientAddress));
 
-        printf("%d bytes were sent:   message was:  %s  \n",bytesSent, package );
+        printf("%d bytes were sent:   message was:  %s  \n",bytesSent, &package[6]);
 
-
-}
-
-void parseCommandFromUDPSocket(){
 
 }
 
@@ -478,7 +529,7 @@ void listenForUDPPackages(){
     //             MSG_WAITALL, (struct sockaddr *) &servaddr, 
     //             &len); 
 
-    if(OwnAddress == 11){
+    if(OwnAddress == 11 && isListening == 1){
 
         char UDPBuffer [2048]; 
         // char quitString [5];
@@ -486,9 +537,46 @@ void listenForUDPPackages(){
         
         int len = sizeof(struct sockaddr); 
         int bytesRecieved = recvfrom(UDPserverSocket, UDPBuffer , 2048 , MSG_CONFIRM, (struct sockaddr *) &udpServerAdresse, &len);
-        printf("\nbytesRecieved = %d   UDPBuffer value: %s \n", bytesRecieved, UDPBuffer );
+        printf("\nbytesRecieved = %d \n", bytesRecieved);
 
-        //// Parse UDP package.
+        int packageLen;
+        memcpy(&packageLen, &UDPBuffer[0],2);
+        int dest;
+        memcpy(&dest, &UDPBuffer[2],2);
+        int source;
+        memcpy(&source, &UDPBuffer[4],2);
+        char * message = &UDPBuffer[6];
+
+        printf("UDP package recieved: \n msg Len: %d     dest:  %d     source:   %d     \n", packageLen, dest, source);
+        printf("Message : %s ", message);
+
+
+        if(dest == OwnAddress){
+        	// Hvis pakken skal til denne noden.
+        	
+        	if(strcmp(message, " QUIT") == 0){
+        		isListening = -1;
+        		printf("Quit signal recieved. Temrinating node.");
+        	}else{
+        		printf("Message for this Node : %s ", message);
+        	}
+        
+        
+        }else{
+        	 // Hvis pakken skal videre.
+        	if(isDestinationInRoutingTable(dest) == 1){
+
+        		char message [strlen(UDPBuffer[6]+1)];
+        		memcpy(&message, &UDPBuffer[6], strlen(UDPBuffer[6])+1);
+        		char * package = constructUDPPackage(dest, source, &message);
+
+        		int nextHop = getNextHopByDestination(dest);
+        		sendPackageToDesination(nextHop, dest, source, package);
+
+        	}
+
+
+        }
 
     }
 }
