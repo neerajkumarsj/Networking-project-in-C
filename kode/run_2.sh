@@ -27,22 +27,22 @@ fi
 cp $MESSAGES_FILENAME "./data.txt"
 
 # Run routing server C
-./routing_server $BASE_PORT 9          &>"$LOG_DIR/routing_server_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./routing_server $BASE_PORT 9          &>"$LOG_DIR/routing_server_log.txt" &
 
 # Wait for the central server to start. If you have to wait for more than 1 seconds you
 # are probably doing something wrong. 
 sleep 1
 
 # Run all nodes
-./node $BASE_PORT 1 2:4 4:2 16:8                 &>"$LOG_DIR/1_log.txt" &
-./node $BASE_PORT 2 1:4 8:1                      &>"$LOG_DIR/2_log.txt" &
-./node $BASE_PORT 4 1:2 16:5                     &>"$LOG_DIR/4_log.txt" &
-./node $BASE_PORT 8 2:1 16:3 32:1                &>"$LOG_DIR/8_log.txt" &
-./node $BASE_PORT 16 1:8 4:5 8:3 32:2 64:5 256:2 &>"$LOG_DIR/16_log.txt" &
-./node $BASE_PORT 32 8:1 16:2 128:2 256:4        &>"$LOG_DIR/32_log.txt" &
-./node $BASE_PORT 64 16:5 256:5                  &>"$LOG_DIR/64_log.txt" &
-./node $BASE_PORT 128 32:2 256:3                 &>"$LOG_DIR/128_log.txt" &
-./node $BASE_PORT 256 16:2 32:4 64:5 128:3       &>"$LOG_DIR/256_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 1 2:4 4:2 16:8                 &>"$LOG_DIR/1_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 2 1:4 8:1                      &>"$LOG_DIR/2_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 4 1:2 16:5                     &>"$LOG_DIR/4_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 8 2:1 16:3 32:1                &>"$LOG_DIR/8_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 16 1:8 4:5 8:3 32:2 64:5 256:2 &>"$LOG_DIR/16_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 32 8:1 16:2 128:2 256:4        &>"$LOG_DIR/32_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 64 16:5 256:5                  &>"$LOG_DIR/64_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 128 32:2 256:3                 &>"$LOG_DIR/128_log.txt" &
+valgrind --leak-check=full --show-leak-kinds=all ./node $BASE_PORT 256 16:2 32:4 64:5 128:3       &>"$LOG_DIR/256_log.txt" &
 
 # Terminate all processes in case of failure
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
@@ -51,5 +51,5 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
 echo "Waiting for processes to finish"
 wait
 
-
+exit 0
 

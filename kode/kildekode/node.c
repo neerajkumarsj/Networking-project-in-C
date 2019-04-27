@@ -16,7 +16,7 @@ char buffer [2048];
 int OwnAddress = -1;
 int BasePort = -1;
 
-char TCPBuffer [2048];
+unsigned char TCPBuffer [2048];
 
 // Value that denotes wether or not we are listening for 
 // Incoming UDP-packages. // When this turns into -1 the listening stops.
@@ -53,20 +53,20 @@ struct sockaddr_in udpServerAdresse;
 
 int main(int argc, char * argv[]){
 
-	printf("Hello I'm a node.c! Amount of arguments: %d \n",argc);
-	
-	initializeNode(argc, argv);
+    printf("Hello I'm a node.c! Amount of arguments: %d \n",argc);
+    
+    initializeNode(argc, argv);
 
 
-	// Denne funksjonen henter også ut rutingtabellen og lagrer den i 
-	// routingTable. 
-	openTCPConnectionToRoutingServer();
+    // Denne funksjonen henter også ut rutingtabellen og lagrer den i 
+    // routingTable. 
+    openTCPConnectionToRoutingServer();
 
     // Print some statistics to make sure initializtion of the NodeInfo struct
     // was done right.
     printNodeInfo();
 
-	UDPserverSocket = openUDPServerConnection();
+    UDPserverSocket = openUDPServerConnection();
 
     if(UDPserverSocket != -1){
         printf("UDP ServerSocket was successfully created! Port: %d \n", BasePort+OwnAddress);
@@ -78,7 +78,7 @@ int main(int argc, char * argv[]){
 
     if(OwnAddress == 1){
 
-    	printf("This is node 1! Preparing sending of UDP packages: \n");
+        printf("This is node 1! Preparing sending of UDP packages: \n");
         int result = sendUDPPackagesThroughNetwork();
 
     }else{
@@ -89,7 +89,9 @@ int main(int argc, char * argv[]){
 
     freeAllAllocatedMemory();
 
-	return 0;
+    exit(0);
+
+    return 0;
 }
 
 
@@ -101,8 +103,8 @@ int main(int argc, char * argv[]){
 
 
 void initializeNode(int argCount, char * argList[]){
-	
-	printf("Initializing node.\n");
+    
+    printf("Initializing node.\n");
     // If the arguments to this program are formatted correctly
     // argc - 3 should be the correct size of the Edge -> Weight Array.
     neighbourCount = argCount - 3;
@@ -111,59 +113,59 @@ void initializeNode(int argCount, char * argList[]){
     int i;
 
     printf("Reading arguments:\n");
-	for(i = 0; i < argCount ; i++){
-		printf("argument %d: %s \n",i, argList[i]);
+    for(i = 0; i < argCount ; i++){
+        printf("argument %d: %s \n",i, argList[i]);
 
 
-		if( i == 1 ){
-			BasePort = atoi(argList[i]);
-		}
+        if( i == 1 ){
+            BasePort = atoi(argList[i]);
+        }
 
-		if( i == 2 ){
-			OwnAddress = atoi(argList[i]);
-		}
+        if( i == 2 ){
+            OwnAddress = atoi(argList[i]);
+        }
 
 
-		// Lagre Neighbooring Nodes + Weights.
-		if( i >= 3){
+        // Lagre Neighbooring Nodes + Weights.
+        if( i >= 3){
             
-			// Så må vi allokere minne til structen som skal lagres.
-			neighbourNodes[currentNeighbourIndex].from = OwnAddress;
+            // Så må vi allokere minne til structen som skal lagres.
+            neighbourNodes[currentNeighbourIndex].from = OwnAddress;
 
-			// Leser inn informasjon i structen fra argumentet.
-			sscanf(argList[i], "%d:%d", &neighbourNodes[currentNeighbourIndex].to, &neighbourNodes[currentNeighbourIndex].weight);
+            // Leser inn informasjon i structen fra argumentet.
+            sscanf(argList[i], "%d:%d", &neighbourNodes[currentNeighbourIndex].to, &neighbourNodes[currentNeighbourIndex].weight);
 
             currentNeighbourIndex++;
 
-		}
+        }
 
-	}
+    }
 }
 
 
 
 
 int openTCPConnectionToRoutingServer(){
- 								// SOCK_STREAM betyr TCP-type socket.
-	int socketToRouter = socket(AF_INET, SOCK_STREAM, 0);
-	struct sockaddr_in serverAdresse;
-	
-	serverAdresse.sin_family = AF_INET;
-	serverAdresse.sin_port = htons(BasePort);
-	serverAdresse.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0 ( localhost ).
+                                // SOCK_STREAM betyr TCP-type socket.
+    int socketToRouter = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in serverAdresse;
+    
+    serverAdresse.sin_family = AF_INET;
+    serverAdresse.sin_port = htons(BasePort);
+    serverAdresse.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0 ( localhost ).
 
     int socketStatus = connect(socketToRouter, (struct sockaddr *) &serverAdresse, sizeof(serverAdresse) );
 
     if(socketStatus != -1){
-    	// Alt gikk bra og dermed kan vi sende data direkte!
+        // Alt gikk bra og dermed kan vi sende data direkte!
 
-    	// #1 Forberéd dataen som skal sendes.
+        // #1 Forberéd dataen som skal sendes.
 
-    	// Protokoll:
-    	// OwnAdress |    Edge      Weight    |          |     Edge      Weight    |     '\0'
-    	// 4 bytes   |    4 bytes   4 bytes   |     ...  |     4 bytes   4 bytes   |     1 byte.
+        // Protokoll:
+        // OwnAdress |    Edge      Weight    |          |     Edge      Weight    |     '\0'
+        // 4 bytes   |    4 bytes   4 bytes   |     ...  |     4 bytes   4 bytes   |     1 byte.
 
-    	char edgeWeightList [2048];
+        char edgeWeightList [2048];
         int i; 
         printf("\n1024 first bytes of edgeWeightList BEFORE network-preparation =  \n");
         for(i = 0; i< 2048; i++){
@@ -171,11 +173,11 @@ int openTCPConnectionToRoutingServer(){
         }
 
 
-    	int curIndex = 0;
+        int curIndex = 0;
           printf("Looping through neighbours: \n ");
-    	  for(i = 0; i < neighbourCount; i++){
+          for(i = 0; i < neighbourCount; i++){
 
-    	  	printf("Dealing with neighbour[%d]  to= %d     weight= %d \n" , i, neighbourNodes[i].to, neighbourNodes[i].weight);
+            printf("Dealing with neighbour[%d]  to= %d     weight= %d \n" , i, neighbourNodes[i].to, neighbourNodes[i].weight);
 
                 edgeWeightList[curIndex] = neighbourNodes[i].to;
                 curIndex += sizeof(int);
@@ -185,20 +187,20 @@ int openTCPConnectionToRoutingServer(){
 
             printf("Index after adding weight: curIndex = %d\n", curIndex);
 
-    	 }
+         }
 
-    	// Set nullchar at the end of the edgeWeightList for this Node.
-    	edgeWeightList [curIndex] = '\0';
-    	printf("\n");
-    	printf("256 first bytes of edgeWeightList after network-preparation =  ");
+        // Set nullchar at the end of the edgeWeightList for this Node.
+        edgeWeightList [curIndex] = '\0';
+        printf("\n");
+        printf("256 first bytes of edgeWeightList after network-preparation =  ");
 
-    	for(i = 0; i< 256; i++){
-    		printf("%d",edgeWeightList[i]);
-    	}
+        for(i = 0; i< 256; i++){
+            printf("%d",edgeWeightList[i]);
+        }
 
 
         printf("\n");
-    	printf("Connection with RoutingServer successfull! \n ");
+        printf("Connection with RoutingServer successfull! \n ");
 
 
 
@@ -208,27 +210,27 @@ int openTCPConnectionToRoutingServer(){
             TCPBuffer[i] = 0;
         }
 
-    	int lastIndex = 0;
-    	memcpy(&TCPBuffer, &OwnAddress, sizeof(int));
-    	lastIndex = sizeof(int);
+        int lastIndex = 0;
+        memcpy(&TCPBuffer, &OwnAddress, sizeof(int));
+        lastIndex = sizeof(int);
 
-    	//snprintf(TCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
-    	memcpy(&TCPBuffer[lastIndex], &edgeWeightList, curIndex);
-
-
-
-    	printf("\n2048 first bytes of TCPBuffer after network-preparation =  \n");
-    	for(i = 0; i< 2048; i++){
-    		printf("%d",TCPBuffer[i]);
-    	}
+        //snprintf(TCPBuffer, sizeof(buffer), "%d\n%s", OwnAddress, edgeWeightList);
+        memcpy(&TCPBuffer[lastIndex], &edgeWeightList, curIndex);
 
 
 
-    	// #2 Send informasjonen for denne Noden.
+        printf("\n2048 first bytes of TCPBuffer after network-preparation =  \n");
+        for(i = 0; i< 2048; i++){
+            printf("%d",TCPBuffer[i]);
+        }
 
-    	// eksempel
-    	// send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
-    	// printf("Attempting to send data: %s\n", TCPBuffer);
+
+
+        // #2 Send informasjonen for denne Noden.
+
+        // eksempel
+        // send(socketToRouter, char buffer[248], sizeof(buffer), 0) 
+        // printf("Attempting to send data: %s\n", TCPBuffer);
         int bytesSent = send(socketToRouter,TCPBuffer, sizeof(TCPBuffer),0);
 
         printf("returnvalue from send() : %d\n", bytesSent);
@@ -249,14 +251,14 @@ int openTCPConnectionToRoutingServer(){
 
     }else{
 
-    	// Error!
-    	printf("Det skjedde en feil ved opprettelsen av TCP-router-klient-socketen!\n");
-    	exit(0);
-    	return -1;
+        // Error!
+        printf("Det skjedde en feil ved opprettelsen av TCP-router-klient-socketen!\n");
+        exit(0);
+        return -1;
 
     }
 
-	return 0;
+    return 0;
 }
 
 
@@ -291,6 +293,10 @@ void fetchRoutingTableFromServer(int serverSocket){
 
             // allokér minne til en struct RoutingTableNode
             routingTable[i] = (struct RoutingTableNode * ) malloc(sizeof(struct RoutingTableNode));
+
+            // Setting default values.
+            routingTable[i]->destination = 0;
+            routingTable[i]->nextHop = 0;
 
             // Kopiér inn en int som henviser til destinasjon
             memcpy(&routingTable[i]->destination, &TCPBuffer[readIndex], sizeof(int));
@@ -339,11 +345,11 @@ int sendUDPPackagesThroughNetwork(){
         while(!feof(dataFile)){
 
 
-        	// clear messageBuffer
-        	int i; 
-        	for(i = 0; i < 2048; i++){
-        		messageBuffer[i] = 0;
-        	}
+            // clear messageBuffer
+            int i; 
+            for(i = 0; i < 2048; i++){
+                messageBuffer[i] = 0;
+            }
 
             
             int destination = 0; 
@@ -403,18 +409,6 @@ int sendUDPPackagesThroughNetwork(){
         fclose(dataFile);
 
 
-        // Skip \n linje-skift char'en som kommer like etter de 4 bytene som holder antall rutere.
-        
-
-        
-
-        ///// 3) Send pakker av gårde til riktig node ved å følge routingTable.
-
-
-
-
-
-
        
 
 
@@ -424,11 +418,10 @@ int sendUDPPackagesThroughNetwork(){
 
 
 char * constructUDPPackage(int destination, int source, char message []){
-    // Format  2 bytes = packet length | dest address  | source address | messsage that must be '\0' terminated.
+    // Format  2 bytes = packet length | 2 bytes = dest address  | 2 bytes = source address | message that must be '\0' terminated.
 
     // packageBuffer er 2048 bytes.
-
-    printf("Constructing package: dest: %d    src: %d     msg:  %s\n",destination, source, message);
+    printf("Constructing package: dest: %d    src: %d     msg:  %s\n", destination, source, message);
     printf("message to be sent: \n");
 
     int i; 
@@ -438,7 +431,7 @@ char * constructUDPPackage(int destination, int source, char message []){
 
     printf("\n");
 
-    int packageLength = strlen(message);
+    int packageLength = 2 + 2 + 2 + strlen(message) + 1;
 
     printf("Suggested package length: %d \n", packageLength);
 
@@ -464,28 +457,28 @@ char * constructUDPPackage(int destination, int source, char message []){
 
 void printPackage(char * package){
 
-	// read len
-	short len, dest, source;
-	memcpy(&len, &package[0], 2);
-	memcpy(&dest, &package[2],  2);
-	memcpy(&source, &package[4], 2);
+    // read len
+    short len = 0 , dest = 0 , source = 0;
+    memcpy(&len, &package[0], 2);
+    memcpy(&dest, &package[2],  2);
+    memcpy(&source, &package[4], 2);
 
-	printf("PackageLength: %d dest: %d   source: %d ", len, dest, source);
+    printf("PackageLength: %d dest: %d   source: %d ", len, dest, source);
 
-	printf("\n data in package: \n");
-	int index ;
-	for( index = 6 ; index < len ; index++){
-	 	printf("%c", package[index]);
-	}
-	printf("\n");
+    printf("\n data in package: \n");
+    int index ;
+    for( index = 6 ; index < len - 7 ; index++){
+        printf("%c", package[index]);
+    }
+    printf("\n");
 
 }
 
 
 int getPackageLength(char * package){
-	short len;
-	memcpy(&len, &package[0], 2);
-	return len;
+    short len;
+    memcpy(&len, &package[0], 2);
+    return len;
 }
 
 
@@ -511,12 +504,8 @@ void sendPackageToDesination(int nextHop, int destination, int source, char * pa
 
         printPackage(package);
 
-         /* sendto(sockfd, (const char *)hello, strlen(hello), 
-          MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr));  */ 
-
         
-        int bytesSent = sendto(outSocket, package , 7 + getPackageLength(package), MSG_CONFIRM, (struct sockaddr *) &udpClientAddress, sizeof(udpClientAddress));
+        int bytesSent = sendto(outSocket, package , getPackageLength(package), MSG_CONFIRM, (struct sockaddr *) &udpClientAddress, sizeof(udpClientAddress));
 
         printf("%d bytes were sent:   message was:  %s  \n",bytesSent, &package[6]);
 
@@ -525,13 +514,11 @@ void sendPackageToDesination(int nextHop, int destination, int source, char * pa
 
 
 void listenForUDPPackages(){
-    // n = recvfrom(sockfd, (char *)buffer, MAXLINE,  
-    //             MSG_WAITALL, (struct sockaddr *) &servaddr, 
-    //             &len); 
 
-    if(OwnAddress == 11 && isListening == 1){
 
-        char UDPBuffer [2048]; 
+    while(isListening == 1){
+
+        unsigned char UDPBuffer [2048]; 
         // char quitString [5];
         // strcpy(quitString, "QUIT");
         
@@ -539,45 +526,56 @@ void listenForUDPPackages(){
         int bytesRecieved = recvfrom(UDPserverSocket, UDPBuffer , 2048 , MSG_CONFIRM, (struct sockaddr *) &udpServerAdresse, &len);
         printf("\nbytesRecieved = %d \n", bytesRecieved);
 
-        int packageLen;
+        int packageLen = 0;
         memcpy(&packageLen, &UDPBuffer[0],2);
-        int dest;
+        int dest = 0;
         memcpy(&dest, &UDPBuffer[2],2);
-        int source;
+        int source = 0;
         memcpy(&source, &UDPBuffer[4],2);
         char * message = &UDPBuffer[6];
 
-        printf("UDP package recieved: \n msg Len: %d     dest:  %d     source:   %d     \n", packageLen, dest, source);
+        //printf("UDP package recieved: \n msg Len: %d     dest:  %d     source:   %d     \n", packageLen, dest, source);
         printf("Message : %s ", message);
+
+        char messageBuffer [2048];
+        memcpy(&messageBuffer, &UDPBuffer[6], packageLen + 1);
+
+        // Construct UDP package returnerer en peker som må deallokeres.
+        char * package = constructUDPPackage(dest, source, message);
 
 
         if(dest == OwnAddress){
-        	// Hvis pakken skal til denne noden.
-        	
-        	if(strcmp(message, " QUIT") == 0){
-        		isListening = -1;
-        		printf("Quit signal recieved. Temrinating node.");
-        	}else{
-        		printf("Message for this Node : %s ", message);
-        	}
+            // Hvis pakken skal til denne noden.
+
+            print_received_pkt((short) OwnAddress, (unsigned char *) package );
+            
+            if(strcmp(message, " QUIT") == 0){
+                isListening = -1;
+                printf("Quit signal recieved. Terminating node.");
+            }else{
+                printf("Message for this Node : %s ", message);
+            }
         
         
-        }else{
-        	 // Hvis pakken skal videre.
-        	if(isDestinationInRoutingTable(dest) == 1){
+        }else if (isDestinationInRoutingTable(dest) == 1){
+             // Hvis pakken skal videre.
 
-        		char message [strlen(UDPBuffer[6]+1)];
-        		memcpy(&message, &UDPBuffer[6], strlen(UDPBuffer[6])+1);
-        		char * package = constructUDPPackage(dest, source, &message);
+            printf("The message is supposed to go elsewhere.  \n", messageBuffer);
+            printf("The message is now in char message []  = %s \n", messageBuffer);
 
-        		int nextHop = getNextHopByDestination(dest);
-        		sendPackageToDesination(nextHop, dest, source, package);
+            print_forwarded_pkt((short) OwnAddress, (unsigned char * ) package);
 
-        	}
+            // Melding som skal videre; 
+            printf("Message after construction: %s ", &message); 
 
+            int nextHop = getNextHopByDestination(dest);
+            sendPackageToDesination(nextHop, dest, source, package);
 
-        }
+             
 
+         }
+
+        free(package);
     }
 }
 
@@ -620,24 +618,24 @@ void freeAllAllocatedMemory (){
     int i;
     for(i = 0; i < tableSize ; i++){
         // Frigjør pekerene til RoutingTableNode
-        //free(routingTable[i]);
+        free((void *) routingTable[i]);
     }
     // Frigjør hele Routing Tabelet
     free(routingTable);
-	free(neighbourNodes);
+    free(neighbourNodes);
 }
 
 
 
 int printNodeInfo(){
-	printf("Node Information:::::\n----------------\n");
-	printf("OwnAddress: %d \n", OwnAddress);
-	printf("BasePort  : %d \n", BasePort);
-	printf("\n");
-	int i = 0; 
-	for(; i < neighbourCount ; i++){
-	    printf("frm: %d  to:   %d   weight: %d \n", neighbourNodes[i].from, neighbourNodes[i].to, neighbourNodes[i].weight);
-	}
+    printf("Node Information:::::\n----------------\n");
+    printf("OwnAddress: %d \n", OwnAddress);
+    printf("BasePort  : %d \n", BasePort);
+    printf("\n");
+    int i = 0; 
+    for(; i < neighbourCount ; i++){
+        printf("frm: %d  to:   %d   weight: %d \n", neighbourNodes[i].from, neighbourNodes[i].to, neighbourNodes[i].weight);
+    }
 }
 
 
