@@ -10,7 +10,13 @@ node: kildekode/node.c kildekode/IN2140Networking.h print_lib/print_lib.h
 
 
 run: all
-	bash run_2.sh 3020
+	bash run_1.sh 2020
+
+run1: all
+	bash run_1.sh 4020
+
+run2: all
+	bash run_2.sh 5020
 	
 
 clean:

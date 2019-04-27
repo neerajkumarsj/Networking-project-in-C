@@ -50,24 +50,25 @@ int main(int argc, char* argv[]){
 
     initializeTCPServer();   
 
-        // 2) Calculate shortest paths and store paths in NodeSockets.
+    // 2) Regn ut korteste paths og lagre pathene i NodeSockets structene!!
     FindDijkstrasShortestPaths(nodeSockets, 1);  
     
 
+    // Regn ut Routing tabellene og lagre det i nodeSocketene!
     CalculateRoutingTableForAllNodeSockets(nodeSockets);
 
-    // Print Routing Tables
+    // Print Routing Tables.
     printRoutingTables(nodeSockets);
+
 
 
     sendBackRoutingTablesToAllNodeSockets(nodeSockets);
 
+
+
     freeAllAllocatedMemory();
 
-    // Åpne en Socket som lytter på en bestemt Port
-    // Og vent til Alle de N node-programmene har koblet seg til.
 
-    // Så må jeg bygge opp en graf og kalkulere dijkstras-algoritme på den.
     
 
     
@@ -131,7 +132,7 @@ void initializeTCPServer(){
             nodeSockets[currentNodeSocketCount]->nodeID = -1;
             nodeSockets[currentNodeSocketCount]->pathFrom1 = NULL;
             nodeSockets[currentNodeSocketCount]->nodes = NULL;
-            nodeSockets[currentNodeSocketCount]->shortestDistTo1 = -1;
+            nodeSockets[currentNodeSocketCount]->shortestDistTo1 = 0;
             currentNodeSocketCount ++;
 
             int bytesRecieved = recv(client_socket, &TCPBuffer, sizeof(TCPBuffer),0);
@@ -141,14 +142,14 @@ void initializeTCPServer(){
                 printf("%d bytes Recieved!! : Recieved message from socket: %d   message:%s\n", bytesRecieved, client_socket, TCPBuffer);
 
 
-                // Decode data from socket.
+                // Finn frem korrekt NodeSocket struct med informasjon om en node basert på socketID'en vi fikk fra socket()!
                 struct NodeSocket * currSock = getNodeSocketBySocketId(nodeSockets, currentNodeSocketCount, client_socket);
 
-                // Copy in the ID of the node.
+                // Kopiér inn nodens ID i NodeSocket structen.
                 memcpy(&currSock->nodeID, &TCPBuffer, sizeof(int));
                 int readIndex = sizeof(int);
 
-                // Count all the weights:
+                // Tell alle vektene som kom inn fra recv()!!
                 while(TCPBuffer[readIndex] != '\0'){
                     readIndex += sizeof(int) * 2;
                 }
@@ -157,17 +158,17 @@ void initializeTCPServer(){
 
 
 
-                // Create dynamcally allocated struct NodeInfo pointer(!) Array.
+                // Lag dynamisk allokért struct NodeInfo peker(!) Array.
                 currSock->nodes = malloc(sizeof(struct NodeInfo * ) * amountOfEdgeWeights);
                 currSock->nodeCount = amountOfEdgeWeights;
 
 
                 readIndex = sizeof(int);
-                // Copy in all the weights.
+                // Kopiér inn alle vektene.
                 int curEdgeWeightIndex = 0;
                 while(TCPBuffer[readIndex] != '\0'){
 
-                    // Allocate dynamic space for a struct NodeInfo! To holde Weight / Edges.
+                    // Allokér dynamisk minne for en struct NodeInfo! For å holde Weight / Edges.
                     currSock->nodes[curEdgeWeightIndex] = malloc( sizeof(struct NodeInfo) );
 
                     int to     =  TCPBuffer[readIndex];
@@ -187,10 +188,8 @@ void initializeTCPServer(){
                 }
 
 
-                // Store the weights in the correct place.
 
-
-                // Clean up the buffer.
+                // Tøm TCP bufferen.
                 clearTCPBuffer();
 
 
@@ -214,31 +213,14 @@ void initializeTCPServer(){
                 printf("Amount of nodes connected in the router exceeded the amount specified at start of Program: Max Sockets is: %d \n",N);
                 exit(0);
             }
-            // 1) Store Socket ID.
-            // 2) Store NodeID.
-            // 3) Store List over Edge - Weights.
+           
 
             
 
         }
 
 
-
-
-        // RECEPTION OF DATA.
-
-
-
-        // recv(ruterServerSocket, char buffer[248], sizeof(buffer), 0);
-        
-        
-
-
-        // Store the Socket connection and the data from the Socket.
-
-
-
-        // Increase the amount of stored Data.
+        // Øk antallet noder som har koblet seg til med TCP til nå !! 
         nodeConnectionsCountSoFar++;
 
 
@@ -252,15 +234,14 @@ void initializeTCPServer(){
 
 
 
-    // When the code reaches this point all the nodes have successfully communicated
-    // with the routing_server.
+    // Når koden når dette punktet har alle nodene sendt nabo-vekt dataen sin over TCP!
 
 
 
-    // 1) CREATE SUFFICIENT STORAGE FOR SHORTEST PATHS.
+    // 1) LAG tilstrekkelig lagringsplass for korteste paths ! :) 
 
-    // In my system this is stored in struct NodeSocket.
-    // But we need to allocate memory for the paths! ;) 
+    // I mitt system lagres korteste paths i NodeSocket. 
+    // De allokéres dynamisk.
 
     printf("Allocating memory for storing Paths in each NodeSocket.");
     int i; 
@@ -274,16 +255,6 @@ void initializeTCPServer(){
         }
         printf("\n");
     }
-
-    
-
-    // Now we need to calculate and send back the Shortest Paths.
-    // From node 1 to all other nodes.
-    
-
-
-
-
     
 
 }
@@ -304,7 +275,7 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []) {
 
     printf("\n\nSending back routing Tables over TCP: \n")  ;
 
-    // RoutingTable Structure:
+    // RoutingTable struktu:
     // len        | from    |  to        |   .... |  from      |    to        | '\0'
     // 4 bytes    | 4 bytes |  4 bytes   |        |  4 bytes   |    4 bytes   |
 
@@ -320,8 +291,8 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []) {
         int j, validPairCount = 0;
         for(j = 0; j < N ; j++){
             
-             
-            // Copy routing-data into the buffer that will be sent over TCP back to the Node.
+            
+            // Kopiér rute data inn i bufferen som vil sendes over TCP tilbake til Noden.     
             if(nodeSockets[i]->routingTable[j] != -1 && nodeSockets[j]->nodeID != 1){
                 // memcpy(dest, src, size_t)
                 memcpy(&TCPBuffer[bufferIndex], &nodeSockets[j]->nodeID, sizeof(int));  
@@ -333,16 +304,15 @@ void sendBackRoutingTablesToAllNodeSockets(struct NodeSocket * nodeSockets []) {
             
         }
 
-        // Finally store the length (in bytes) of the remaining data.
+        // Lagre lengden ( i bytes ) på dataen som sendes over til Noden. 
+        // I TCP bufferen som skal sendes over til node.
         int validDataLength = validPairCount * 4 * 2;
         char nullChar = '\0';
         memcpy(&TCPBuffer, &validDataLength, sizeof(int) );
         memcpy(&TCPBuffer[bufferIndex], &nullChar, 1);
 
         printf("DataSize: %d bytes. + 4 bytes for this int.\n", validDataLength) ;
-        //printBuffer(TCPBuffer,2048);
 
-        // int bytesSent = send(socketToRouter,nodeInfoTCPBuffer, sizeof(nodeInfoTCPBuffer),0);
         int bytesSent = send(nodeSockets[i]->socketID, &TCPBuffer, sizeof(TCPBuffer), 0);
 
     }
@@ -368,27 +338,31 @@ void printBuffer(char * arr, int len){
 
 void freeAllAllocatedMemory(){
 
-    // Free up dynamically allocated memory from nodeSockets.
+    // Frigjør dynamisk allokért minne fra NodeSockets.
     
     int i;
     for(i = 0; i < currentNodeSocketCount ; i++){
-
-
-        // TODO 1) MÅ FRIGJØRE nodeSockets[i].nodes!"!#=)"!(#!"=)#((#=)!")
-
-
-        // TODO 2) MÅ FRIGJØRE nodesockets[i].nodePathForm1 !=")#(!"=)#( )
         
+        // Frigjør nabopekerene.
         int j; 
         for(j = 0; j < nodeSockets[i]->nodeCount; j++){
             free(nodeSockets[i]->nodes[j]);         
         }
 
+        // Frigjør pathen.
         free(nodeSockets[i]->pathFrom1);
+
+        // frigjør routing tabellen
         free(nodeSockets[i]->routingTable);
+
+        // Frigjør NodeSocketene's array peker til noder.
         free(nodeSockets[i]->nodes);
+
+        // Frigjør noden selv.
         free(nodeSockets[i]);
     }
+
+    // Frigjør pekeren til arrayet av NodeSockets.
     free(nodeSockets);
 
 }
@@ -409,7 +383,7 @@ void printAllNodeSockets(struct NodeSocket * sockets [], int len ){
         }
 
 
-        // Print path if there is one.
+        // Print path hvis det finnes en.
         printf("\nprint Path: \n");
         if(sockets[i] != NULL) {
             if(sockets[i]->pathFrom1 != NULL){
@@ -443,6 +417,10 @@ struct NodeSocket * getNodeSocketBySocketId(struct NodeSocket * sockets [], int 
 
 #define INFINITE_MAXIMA 99392392 // Egentlig infinity, trengte bare å gjøre koden litt morsom.
 
+
+
+// Min implementasjon av Dijkstras er inspirert av pseudokoden på Wikipedia om algoritmen!
+// https://en.wikipedia.org/wiki/Dijkstra's_algorithm
 void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
 
     printf("Dijkstra has started!!");
@@ -453,7 +431,7 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
     int dist[N]; // Denne vil holde avstanden til de ulike nodene.
     int prev[N]; // Denne vil holde forrige data.
 
-    int i ;   /// Here i denotes the index of the various nodes in the NodeSocket nodes[] array.
+    int i ;   /// Her er i indeksen til de ulike nodene i NodeSocket nodes[] arrayet.
     for(i = 0; i < N; i++){
         dist[i] = INFINITE_MAXIMA;
         prev[i] = -1;
@@ -471,7 +449,7 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
     while(isArrayEmpty(&Q,N) == -1){
         printf("isArrayEmpty  %d \n", isArrayEmpty(&Q,N));
 
-        // Find min dist[u];
+        // Finn min dist[u];
         int u = findIndexInQWithMinDist(&Q, &dist, N);
         
         Q[u] = -1;
@@ -485,7 +463,7 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
             int v = -1;
             v = getIndexOfNodeSocketWithNodeID(currentNode->nodes[i]->to);
 
-            // If the element is already taken out of Q - don't bother.     
+            // Hvis elementet allerede er tatt ut av Q - skip denne runden. 
             int res = isIndexInArrayEmpty(&Q,N,v);
             if(res == 1)
                 continue;
@@ -506,11 +484,11 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
     }
 
 
-    // 2) Store the shortest path to 1 in each NodeSockets[i]->pathFrom1 array.
+    // 2) Lagre den korteste path til 1 i hver enkelt NodeSockets[i]->pathFrom1 array!
     for (i = 1; i < N; i++) { 
         savePathRecursivelyToIntArray(prev, i, nodes[i]->pathFrom1, 0); 
         nodes[i]->shortestDistTo1 = dist[i];
-        // Reverse the array since it in fact stores the values backwards.
+        // Reversér arrayet siden det med denne metoden lagres baklengs.
         reversePathArray(nodes[i]->pathFrom1, N);
     } 
 
@@ -520,12 +498,12 @@ void FindDijkstrasShortestPaths(struct NodeSocket * nodes [], int startNode){
 }
 
 int isIndexInArrayEmpty(int * arr, int len, int index){
-    // If the index is out of Bounds return -1 
+    // Hvis indexen vi skal sjekke er uten for arrayet; return -1.
     if(index > len)
         return 1;
 
-    // If the value in the array at index is -1 return true!
-    // I define a value of -1 to be empty.
+    // Hvis verdien i arrayet til indexen er -1 returner 1 !
+    // Jeg definerer en verdi på -1 på indexen i arrayet til å være 'TOM'.
     if(arr[index] == -1){
         return 1;
     }else{
@@ -538,14 +516,14 @@ int lengthBetweenNodes(struct NodeSocket * node, int index){
     return node->nodes[index]->weight;
 }
 
-// Returns the Index of the element with the least distance.
+// Returnerer indexen til elementet med den korteste distansen.
 int findIndexInQWithMinDist(int * Q, int * dist, int len){
     int i;
     int minDist = INFINITE_MAXIMA;
     int indexOfMinDist = -1;
     for(i = 0; i < len; i++){
 
-        // Check that the element is in Q and then check if the dist is smaller.
+        // Sjekk at elementet er i Q og sjekk deretter om dist er mindre.
         if(Q[i] != -1 && dist[i] <= minDist){
             minDist = dist[i];
             indexOfMinDist = i;
@@ -554,9 +532,10 @@ int findIndexInQWithMinDist(int * Q, int * dist, int len){
     
     return indexOfMinDist;
 }
-    
-// If One of the elements in the array is -1 ( which I use to denote emptiness )
-// Then the function returns -1 which means. NO its not empty.
+   
+
+// Hvis ETT av elementene i arrayet vi får inn som argument er -1 ( som jeg bruker i programmet til å peke på tomhet )    
+// Så returnerer funksjonen -1, som betyr; NEI arrayet er ikke tomt.
 int isArrayEmpty(int * arr , int len){
     int i; 
     for(i = 0; i < len; i++){
@@ -570,31 +549,31 @@ int isArrayEmpty(int * arr , int len){
 
 void CalculateRoutingTableForAllNodeSockets(struct NodeSocket * nodes []){
 
-    // Routing table is stored inside each NodeSocekt int * 
+    // RoutingTable er lagret inni hver enkelts NodeSocket som en int *  !!
 
 
     int i; 
     for(i = 0; i < N; i++){
 
-        // Create routing Table.
+        // Allokér minne for routingTable
         nodes[i]->routingTable   = malloc(sizeof(int) * N);
 
         int j;
 
         nodes[i]->routingTable[0] = -1;
 
-        // Set the first node which tells us about the startingNode
+        // Sett the first node which tells us about the startingNode
         for(j = 1; j < N; j++){
 
             int k;
-            // Set default value for the routing table.
+            // Sett standard verdi for routingtabellen.
             nodes[i]->routingTable[j] = -1;
 
-            // Iterate through all the shortest paths of all nodes.
+            // Bla igjennom alle de korteste pathene til alle nodes.
             for(k = 0; k < N; k++){
-                // If any of the nodes include this node's ID
+                // Hvis noen av nodene har denne noden's ID:
                 if(nodes[j]->pathFrom1[k] == nodes[i]->nodeID){
-                    // printf("MATCH FOUND %d , %d ",nodes[j]->pathFrom1[k], nodes[i]->nodeID );
+                    // Lagre den.
                     if(nodes[j]->pathFrom1[k+1] != -1){
                         nodes[i]->routingTable[j] = nodes[j]->pathFrom1[k+1];
                     }
@@ -616,7 +595,7 @@ int getIndexOfNodeSocketWithNodeID(int nodeID){
         if(nodeSockets[i]->nodeID == nodeID)
             return i;
     }
-    // return -1 if it failed.
+    // return -1 Hvis noe feilet. Hvis indexen ikke finnes.
     return -1;
 }
 
@@ -637,7 +616,7 @@ void printAllEdgesAndWeights(struct NodeSocket * sockets [], int len){
 void savePathRecursivelyToIntArray(int * prev  , int index, int * destinationArray, int currIndex) { 
       
     if(prev[index] == -1){
-        // Add the last index to the Path.
+        // Legg til den siste indexen til pathen.
         destinationArray[currIndex] = 1;
         return;
     }
