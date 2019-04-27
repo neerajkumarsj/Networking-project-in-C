@@ -50,8 +50,5 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
 echo "Waiting for processes to finish"
 wait
 
-
-#bash run_2.sh 3020
-
 exit 0
 

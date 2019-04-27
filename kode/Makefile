@@ -22,6 +22,8 @@ run2: all
 clean:
 	rm -f routing_server
 	rm -f node
-	rm logfile.txt
+	rm -f logfile.txt
+	rm -f data.txt
 	rm -r logs/
+
 

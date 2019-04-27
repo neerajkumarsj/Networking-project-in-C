@@ -1,0 +1,41 @@
+Mine kommentarer angående eksamensinnlevéringen her:
+
+
+
+	STATUS : 
+				Det virker riktig, noen ganger!! 
+					Problemer listet under.
+
+
+
+	Kjøring :
+		- For å kjøre programmene med valgrind bruk:       
+
+			make run1    
+			make run2 
+
+
+
+
+
+
+Problemer jeg har identifisert, men ikke enda løst.
+
+	#1 NetworkOrder:
+		- Det virker som om det er noe galt med network order. 
+			Siden print_pkt gir så rare destinasjoner osv :).
+
+
+	#2 Sjekker ikke om hele pakken har ankommet:
+		- TCP pakkene er ustabile. Jeg burde sjekke length på inkommende pakker 
+		og be Nodene om en ny forsendelse! Hadde ikke helt tid til å gjøre det ferdig 
+		selv om jeg er oppmerksom på problemet.
+
+
+	#3 Nodeprogrammer henger igjen etter kjøring.
+		- Fordi TCP pakkene ikke kommer ordentlig frem blir det problemer med stenging av Nodene,
+		siden nodene aldri får QUIT signalet. 
+
+	#4 Automatisk dreping av noder som ikke får QUIT signalet.
+		- Som en følge av 3 må man drepe noderprosesser. Men jeg Fant aldri ut hvordan jeg kan gjøre dette dynamisk.
+		Så jeg har brukt ps -u for å finne PID'ene og så drepe node prosessene med manuelt    kill $PID
