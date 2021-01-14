@@ -2,4 +2,4 @@
 # Peter Rasmussen Lubiana
 
 ## This program is C-code simulating a network.
-# ( Its semi-low-lvl C networking code basically - using sockets. )
+# ( Its low-lvl C networking code basically - using sockets. )
